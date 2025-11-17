@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relatório de Compra</title>
+    <link href="/css/style.css" rel="stylesheet" />
+    <style>
+      /* Estilos específicos para impressão */
+      @media print {
+        body {
+          background-color: #ffffff;
+          color: #000000;
+        }
+        /* Esconde o botão de imprimir */
+        .no-print {
+          display: none;
+        }
+        /* Garante que o conteúdo ocupe a página */
+        .print-container {
+          box-shadow: none;
+          border: none;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-gray-700 p-8">
+    <div
+      class="print-container max-w-4xl mx-auto bg-white text-gray-900 rounded-lg shadow-xl p-8 md:p-12"
+    >
+      <div class="flex justify-between items-center border-b pb-4 mb-6">
+        <div>
+          <h1 class="text-3xl font-bold">Relatório de Pedido de Compra</h1>
+          <p id="report-id" class="text-lg text-gray-600">ID do Pedido: ...</p>
+        </div>
+        <div class="text-right">
+          <img
+            src="https://ssl.gstatic.com/tasks/bundles/prod/68001201_task_emptystate_dark.svg"
+            alt="Logo"
+            class="h-16 w-16 opacity-50"
+          />
+          <p class="text-sm text-gray-500 mt-2">Gestor de Compras</p>
+        </div>
+      </div>
+
+      <div class="no-print mb-6 text-right">
+        <button
+          id="print-button"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+        >
+          Imprimir Relatório
+        </button>
+      </div>
+
+      <section class="mb-8">
+        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
+          Detalhes do Pedido
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <strong class="block text-gray-600">Título do Pedido:</strong>
+            <span id="report-title">...</span>
+          </div>
+          <div>
+            <strong class="block text-gray-600"
+              >Setor (Centro de Custo):</strong
+            >
+            <span id="report-department">...</span>
+          </div>
+          <div>
+            <strong class="block text-gray-600"
+              >Responsável (Criador/Solicitante):</strong
+            >
+            <span id="report-responsible">...</span>
+          </div>
+          <div>
+            <strong class="block text-gray-600">Data de Criação:</strong>
+            <span id="report-created-at">...</span>
+          </div>
+          <div>
+            <strong class="block text-gray-600">Status Atual:</strong>
+            <span id="report-status">...</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
+          Informações da Compra
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <strong class="block text-gray-600"
+              >Preço (Unitário ou Total):</strong
+            >
+            <span id="report-price">...</span>
+          </div>
+          <div>
+            <strong class="block text-gray-600">Quantidade:</strong>
+            <span id="report-quantity">...</span>
+          </div>
+          <div>
+            <strong class="block text-gray-600">Data da Finalização:</strong>
+            <span id="report-finalized-at">...</span>
+          </div>
+          <div class="md:col-span-3">
+            <strong class="block text-gray-600">Link da Compra:</strong>
+            <a
+              id="report-link"
+              href="#"
+              target="_blank"
+              class="text-blue-600 hover:underline break-all"
+              >...</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-8">
+        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
+          Histórico de Status (Notas)
+        </h2>
+        <ul id="report-notes-list" class="space-y-3">
+          <li>Carregando histórico...</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
+          Links de Pesquisa Utilizados
+        </h2>
+        <ul id="report-research-list" class="space-y-3">
+          <li>Carregando links...</li>
+        </ul>
+      </section>
+    </div>
+
+    <script src="/js/report.js"></script>
+  </body>
+</html>

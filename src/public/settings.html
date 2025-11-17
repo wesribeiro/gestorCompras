@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full bg-gray-900">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Configurações - Gestor de Compras</title>
+    <link href="/css/style.css" rel="stylesheet" />
+  </head>
+  <body class="h-full">
+    <header class="bg-gray-800 shadow-md">
+      <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+          <div class="flex items-center">
+            <a href="index.html" class="text-xl font-bold text-white"
+              >Gestor de Compras</a
+            >
+            <span class="ml-4 text-lg font-semibold text-gray-400"
+              >/ Configurações</span
+            >
+          </div>
+          <div class="flex items-center">
+            <a
+              href="index.html"
+              class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-500"
+            >
+              &larr; Voltar ao Kanban
+            </a>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+      <div class="overflow-hidden rounded-lg bg-gray-800 shadow">
+        <div class="border-b border-gray-700 px-4 py-5 sm:px-6">
+          <h3 class="text-lg font-semibold leading-6 text-white">
+            Configurações da Aplicação
+          </h3>
+          <p class="mt-1 max-w-2xl text-sm text-gray-400">
+            Controle os principais fluxos de trabalho da aplicação.
+          </p>
+        </div>
+
+        <div class="border-t border-gray-700 p-0">
+          <dl class="divide-y divide-gray-700">
+            <div
+              class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 items-center"
+            >
+              <dt class="text-sm font-medium text-white">
+                Fluxo de Aprovação de Solicitações
+                <p class="mt-1 text-xs text-gray-400">
+                  Se **Ativado**, os utilizadores devem criar "Solicitações" que
+                  precisam ser aprovadas pela Diretoria antes de aparecerem no
+                  Kanban do Comprador.<br />
+                  Se **Desativado** (Modo Simples), o Comprador pode criar
+                  tarefas diretamente no Kanban.
+                </p>
+              </dt>
+              <dd
+                class="mt-1 flex justify-end text-sm text-gray-300 sm:col-span-2 sm:mt-0"
+              >
+                <button
+                  type="button"
+                  id="toggle-approval"
+                  class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 focus:ring-offset-gray-900"
+                  role="switch"
+                  aria-checked="false"
+                >
+                  <span class="sr-only">Ativar fluxo de aprovação</span>
+                  <span
+                    aria-hidden="true"
+                    id="toggle-approval-handle"
+                    class="pointer-events-none inline-block h-5 w-5 translate-x-0 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  ></span>
+                </button>
+              </dd>
+            </div>
+
+            <div class="px-4 py-3 sm:px-6">
+              <p id="status-message" class="text-sm text-gray-400"></p>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </main>
+
+    <script src="/js/settings.js"></script>
+  </body>
+</html>
