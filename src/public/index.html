@@ -3,18 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard - Gestor de Compras</title>
+    <title>Gestor de Compras v3.1</title>
     <link href="/css/style.css" rel="stylesheet" />
-    <style>
-      /* (CSS da Scrollbar - omitido por brevidade, mas está no input.css) */
-    </style>
+    <script>
+      if (
+        localStorage.theme === "dark" ||
+        (!("theme" in localStorage) &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    </script>
   </head>
-  <body class="flex h-full overflow-hidden bg-dark text-text-primary">
-    <aside class="w-64 flex-shrink-0 flex-col bg-medium p-4 hidden md:flex">
+  <body
+    class="flex h-full overflow-hidden bg-dark text-text-primary transition-colors duration-200"
+  >
+    <aside
+      class="w-64 flex-shrink-0 flex-col bg-medium p-4 hidden md:flex border-r border-light"
+    >
       <header class="mb-4">
         <button
           id="sidebar-create-button"
-          class="flex w-full items-center justify-center rounded-full bg-accent px-4 py-2 font-semibold text-white shadow-lg hover:bg-accent-hover"
+          class="flex w-full items-center justify-center rounded-full bg-accent px-4 py-2 font-semibold text-white shadow-lg hover:bg-accent-hover transition-all"
           style="display: none"
         >
           <svg
@@ -27,11 +39,11 @@
               d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
             />
           </svg>
-          Criar Pedido
+          Lançar Pedido
         </button>
       </header>
 
-      <nav class="flex-1 space-y-2">
+      <nav class="flex-1 space-y-2 overflow-y-auto">
         <a
           href="#"
           class="flex items-center rounded-r-full bg-light p-2 text-blue-300"
@@ -52,77 +64,64 @@
           Todos os pedidos
         </a>
 
-        <div classs="h-px bg-light my-2"></div>
+        <div class="h-px bg-light my-2"></div>
 
         <div
           class="px-2 pt-4 text-xs font-semibold uppercase text-text-secondary"
         >
-          Listas
+          Filas do Kanban
         </div>
-        <ul class="space-y-1" id="sidebar-lists">
-          <li>
-            <a
-              href="#pedido_compra"
-              class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md"
-            >
-              <input
-                type="checkbox"
-                checked
-                class="mr-3 h-4 w-4 rounded-sm border-light bg-medium text-accent focus:ring-accent"
-                disabled
-              />
-              Pedido de compra
-            </a>
-          </li>
-          <li>
-            <a
-              href="#em_cotacao"
-              class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md"
-            >
-              <input
-                type="checkbox"
-                checked
-                class="mr-3 h-4 w-4 rounded-sm border-light bg-medium text-accent focus:ring-accent"
-                disabled
-              />
-              Em cotação
-            </a>
-          </li>
-          <li>
-            <a
-              href="#estagnado"
-              class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md"
-            >
-              <input
-                type="checkbox"
-                checked
-                class="mr-3 h-4 w-4 rounded-sm border-light bg-medium text-accent focus:ring-accent"
-                disabled
-              />
-              Estagnado
-            </a>
-          </li>
-          <li>
-            <a
-              href="#compra_efetuada"
-              class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md"
-            >
-              <input
-                type="checkbox"
-                checked
-                class="mr-3 h-4 w-4 rounded-sm border-light bg-medium text-accent focus:ring-accent"
-                disabled
-              />
-              Compra efetuada
-            </a>
-          </li>
-        </ul>
+
+        <ul class="space-y-1" id="sidebar-lists"></ul>
+
+        <button
+          id="sidebar-new-column-button"
+          class="w-full flex items-center p-2 mt-2 text-sm text-accent hover:text-accent-hover rounded-md transition-colors group"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Nova Fila
+        </button>
       </nav>
 
-      <div class="mt-auto p-2" id="admin-settings-link" style="display: none">
+      <div
+        class="mt-auto p-2 space-y-1"
+        id="admin-panel-links"
+        style="display: none"
+      >
+        <a
+          href="admin.html"
+          class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="mr-3 h-5 w-5"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 2c-1.716 0-3.408.106-5.07.31C3.806 2.45 3 3.414 3 4.517V17.25a.75.75 0 0 0 1.075.676L10 15.082l5.925 2.844A.75.75 0 0 0 17 17.25V4.517c0-1.103-.806-2.068-1.93-2.207A41.403 41.403 0 0 0 10 2Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Administração
+        </a>
         <a
           href="settings.html"
-          class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md"
+          class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -135,11 +134,6 @@
               d="M11.078 2.25.917 8.59c-.43.32-.43.94 0 1.26l10.16 6.34c.43.32 1.05.32 1.48 0l10.16-6.34c.43-.32.43-.94 0-1.26L12.559 2.25c-.43-.32-1.05-.32-1.48 0Z"
               clip-rule="evenodd"
             />
-            <path
-              fill-rule="evenodd"
-              d="M10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-              clip-rule="evenodd"
-            />
           </svg>
           Configurações
         </a>
@@ -148,7 +142,7 @@
 
     <main class="flex-1 flex flex-col overflow-hidden">
       <header
-        class="flex h-16 flex-shrink-0 items-center justify-between border-b border-light bg-dark px-4 md:px-6"
+        class="flex h-16 flex-shrink-0 items-center justify-between border-b border-light bg-dark px-4 md:px-6 transition-colors duration-200"
       >
         <button class="md:hidden text-text-secondary">
           <svg
@@ -168,10 +162,43 @@
         </button>
         <div class="flex items-center">
           <h1 id="main-title" class="text-xl font-semibold text-text-primary">
-            Todos os pedidos
+            Gestão de Compras
           </h1>
         </div>
         <div class="flex items-center space-x-4">
+          <button
+            id="theme-toggle"
+            class="text-text-secondary hover:text-text-primary focus:outline-none"
+          >
+            <svg
+              id="theme-toggle-light-icon"
+              class="hidden w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"
+              />
+            </svg>
+            <svg
+              id="theme-toggle-dark-icon"
+              class="hidden w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
+              />
+            </svg>
+          </button>
           <button
             id="logout-button"
             class="text-text-secondary hover:text-text-primary"
@@ -201,138 +228,13 @@
         </div>
       </header>
 
-      <div class="flex-1 overflow-x-auto p-4 md:p-6">
-        <div class="flex h-full min-h-0 space-x-4">
-          <div class="flex w-80 flex-shrink-0 flex-col rounded-lg bg-medium">
-            <div
-              class="flex items-center justify-between p-3 border-b border-light"
-            >
-              <h3 class="font-semibold text-text-primary">Pedido de compra</h3>
-              <button class="text-text-secondary hover:text-text-primary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  class="h-5 w-5"
-                >
-                  <path
-                    d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div
-              class="flex-1 overflow-y-auto p-3"
-              id="kanban-col-pedido_compra"
-            >
-              <div class="text-center text-text-secondary pt-10">
-                <img
-                  src="https://ssl.gstatic.com/tasks/bundles/prod/68001201_task_emptystate_dark.svg"
-                  class="mx-auto h-32"
-                  alt=""
-                />
-                <h4 class="mt-4 font-semibold">Não há pedidos</h4>
-                <p class="text-sm">Adicione seus pedidos e acompanhe-os.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex w-80 flex-shrink-0 flex-col rounded-lg bg-medium">
-            <div
-              class="flex items-center justify-between p-3 border-b border-light"
-            >
-              <h3 class="font-semibold text-text-primary">Em cotação</h3>
-              <button class="text-text-secondary hover:text-text-primary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  class="h-5 w-5"
-                >
-                  <path
-                    d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-3" id="kanban-col-em_cotacao">
-              <div class="text-center text-text-secondary pt-10">
-                <img
-                  src="https://ssl.gstatic.com/tasks/bundles/prod/68001201_task_emptystate_dark.svg"
-                  class="mx-auto h-32"
-                  alt=""
-                />
-                <h4 class="mt-4 font-semibold">Não há pedidos</h4>
-                <p class="text-sm">Arraste pedidos para esta coluna.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex w-80 flex-shrink-0 flex-col rounded-lg bg-medium">
-            <div
-              class="flex items-center justify-between p-3 border-b border-light"
-            >
-              <h3 class="font-semibold text-text-primary">Estagnado</h3>
-              <button class="text-text-secondary hover:text-text-primary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  class="h-5 w-5"
-                >
-                  <path
-                    d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-3" id="kanban-col-estagnado">
-              <div class="text-center text-text-secondary pt-10">
-                <img
-                  src="https://ssl.gstatic.com/tasks/bundles/prod/68001201_task_emptystate_dark.svg"
-                  class="mx-auto h-32"
-                  alt=""
-                />
-                <h4 class="mt-4 font-semibold">Não há pedidos</h4>
-                <p class="text-sm">Arraste pedidos para esta coluna.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex w-80 flex-shrink-0 flex-col rounded-lg bg-medium">
-            <div
-              class="flex items-center justify-between p-3 border-b border-light"
-            >
-              <h3 class="font-semibold text-text-primary">Compra efetuada</h3>
-              <button class="text-text-secondary hover:text-text-primary">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  class="h-5 w-5"
-                >
-                  <path
-                    d="M10 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 8.5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM11.5 15.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0Z"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div
-              class="flex-1 overflow-y-auto p-3"
-              id="kanban-col-compra_efetuada"
-            >
-              <div class="text-center text-text-secondary pt-10">
-                <img
-                  src="https://ssl.gstatic.com/tasks/bundles/prod/68001201_task_emptystate_dark.svg"
-                  class="mx-auto h-32"
-                  alt=""
-                />
-                <h4 class="mt-4 font-semibold">Não há pedidos</h4>
-                <p class="text-sm">Arraste pedidos concluídos para cá.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div
+        class="flex-1 overflow-x-auto p-4 md:p-6 bg-dark transition-colors duration-200"
+      >
+        <div
+          class="flex h-full min-h-0 space-x-4"
+          id="kanban-board-container"
+        ></div>
       </div>
     </main>
 
@@ -340,10 +242,12 @@
       id="create-pedido-modal"
       class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-75"
     >
-      <div class="w-full max-w-lg bg-medium rounded-lg shadow-xl p-6">
+      <div
+        class="w-full max-w-lg bg-medium rounded-lg shadow-xl p-6 border border-light"
+      >
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-semibold text-text-primary">
-            Criar Novo Pedido
+            Lançar Novo Pedido
           </h2>
           <button
             id="create-modal-close-button"
@@ -361,42 +265,57 @@
             </svg>
           </button>
         </div>
-
         <form id="create-pedido-form" class="space-y-4">
           <div>
-            <label
-              for="create-pedido-title"
-              class="block text-sm font-medium text-text-secondary"
-              >Título do Pedido</label
-            >
-            <input
+            <label class="block text-sm font-medium text-text-secondary"
+              >Título</label
+            ><input
               type="text"
               id="create-pedido-title"
               required
-              class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-inset focus:ring-accent sm:text-sm"
+              class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
             />
           </div>
           <div>
-            <label
-              for="create-pedido-department"
-              class="block text-sm font-medium text-text-secondary"
-              >Setor (Centro de Custo)</label
-            >
-            <select
-              id="create-pedido-department"
+            <label class="block text-sm font-medium text-text-secondary"
+              >Solicitante</label
+            ><input
+              type="text"
+              id="create-pedido-solicitante"
               required
-              class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-inset focus:ring-accent sm:text-sm"
-            >
-              <option value="">Carregando setores...</option>
-            </select>
+              class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
+            />
           </div>
-
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-text-secondary"
+                >Prioridade</label
+              ><select
+                id="create-pedido-priority"
+                class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
+              >
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-text-secondary"
+                >Grupo</label
+              ><select
+                id="create-pedido-group"
+                required
+                class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
+              >
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+          </div>
           <div
             id="create-pedido-error"
             class="text-sm text-red-400"
             style="display: none"
           ></div>
-
           <div class="pt-4 flex justify-end space-x-3">
             <button
               type="button"
@@ -409,61 +328,244 @@
               type="submit"
               class="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
             >
-              Salvar Pedido
+              Lançar
             </button>
           </div>
         </form>
       </div>
     </div>
+
     <div
-      id="pedido-modal"
+      id="column-detail-modal"
       class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
     >
       <div
-        class="flex flex-col w-full max-w-2xl h-full md:h-auto md:max-h-[80vh] bg-medium rounded-lg shadow-xl overflow-hidden"
+        class="flex flex-col w-full max-w-4xl h-full md:h-[90vh] bg-medium rounded-lg shadow-xl overflow-hidden border border-light"
       >
         <div
-          class="flex items-center justify-between p-4 border-b border-light"
+          class="flex items-center justify-between p-4 border-b border-light bg-dark/50"
         >
-          <h2 id="modal-title" class="text-xl font-semibold text-text-primary">
-            Carregando detalhes do pedido...
-          </h2>
+          <div>
+            <h2
+              id="col-modal-title"
+              class="text-xl font-bold text-text-primary"
+            >
+              Detalhes da Fila
+            </h2>
+            <p class="text-xs text-text-secondary">
+              Gerencie esta fila e visualize seus pedidos.
+            </p>
+          </div>
           <button
-            id="modal-close-button"
+            id="col-modal-close-button"
             class="text-text-secondary hover:text-text-primary"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
               class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
               <path
-                d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
               />
             </svg>
           </button>
         </div>
 
+        <div class="flex flex-1 overflow-hidden">
+          <div
+            class="w-1/3 border-r border-light p-4 space-y-6 overflow-y-auto bg-dark/20"
+          >
+            <h3 class="text-sm font-bold text-text-secondary uppercase">
+              Configurações
+            </h3>
+            <form id="col-edit-form" class="space-y-4">
+              <input type="hidden" id="col-edit-id" />
+              <div>
+                <label class="text-xs text-text-secondary">Nome da Fila</label
+                ><input
+                  type="text"
+                  id="col-edit-title"
+                  required
+                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                />
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-text-secondary">Cor</label
+                  ><select
+                    id="col-edit-color"
+                    class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                  >
+                    <option value="gray">Cinza</option>
+                    <option value="blue">Azul</option>
+                    <option value="yellow">Amarelo</option>
+                    <option value="red">Vermelho</option>
+                    <option value="green">Verde</option>
+                    <option value="purple">Roxo</option>
+                    <option value="pink">Rosa</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-text-secondary">Ordem</label
+                  ><input
+                    type="number"
+                    id="col-edit-position"
+                    class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                  />
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="col-edit-initial"
+                  class="rounded border-light bg-light text-accent focus:ring-accent"
+                /><label
+                  for="col-edit-initial"
+                  class="text-sm text-text-primary"
+                  >Fila Inicial</label
+                >
+              </div>
+              <div class="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="col-edit-complete"
+                  class="rounded border-light bg-light text-accent focus:ring-accent"
+                /><label
+                  for="col-edit-complete"
+                  class="text-sm text-text-primary"
+                  >Permite Finalizar</label
+                >
+              </div>
+              <button
+                type="submit"
+                class="w-full bg-accent hover:bg-accent-hover text-white py-2 rounded text-sm font-semibold"
+              >
+                Salvar Alterações
+              </button>
+            </form>
+            <div class="pt-4 border-t border-light">
+              <button
+                id="col-delete-btn"
+                class="w-full text-red-400 hover:text-red-300 text-xs border border-red-900/50 rounded py-2"
+              >
+                Excluir Esta Fila
+              </button>
+            </div>
+          </div>
+
+          <div class="flex-1 p-4 overflow-y-auto bg-medium">
+            <h3 class="text-sm font-bold text-text-secondary uppercase mb-4">
+              Pedidos nesta Fila
+            </h3>
+            <div id="col-pedidos-list" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="pedido-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+    >
+      <div
+        class="flex flex-col w-full max-w-2xl h-full md:h-auto md:max-h-[80vh] bg-medium rounded-lg shadow-xl overflow-hidden border border-light"
+      >
+        <div
+          class="flex items-center justify-between p-4 border-b border-light"
+        >
+          <h2 class="text-xl font-semibold text-text-primary">
+            Detalhes do Pedido
+          </h2>
+          <div class="flex items-center space-x-2">
+            <button
+              id="modal-save-changes-btn"
+              class="bg-accent hover:bg-accent-hover text-white text-xs px-3 py-1 rounded transition-colors"
+            >
+              Salvar Edição
+            </button>
+            <button
+              id="modal-delete-button"
+              class="text-red-400 hover:text-red-500 p-1"
+              title="Excluir"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+            <button
+              id="modal-close-button"
+              class="text-text-secondary hover:text-text-primary"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <div class="flex-1 overflow-y-auto p-6 space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div class="grid grid-cols-1 gap-4">
             <div>
-              <span class="font-semibold text-text-secondary block"
-                >Status (Coluna)</span
-              >
-              <span id="modal-status" class="text-text-primary">...</span>
+              <label class="text-xs text-text-secondary">Título</label
+              ><input
+                type="text"
+                id="modal-edit-title"
+                class="w-full bg-light border-0 rounded p-2 text-text-primary"
+              />
             </div>
-            <div>
-              <span class="font-semibold text-text-secondary block"
-                >Setor (Centro de Custo)</span
-              >
-              <span id="modal-department" class="text-text-primary">...</span>
-            </div>
-            <div>
-              <span class="font-semibold text-text-secondary block"
-                >Responsável</span
-              >
-              <span id="modal-responsible" class="text-text-primary">...</span>
+            <div class="grid grid-cols-3 gap-4">
+              <div>
+                <label class="text-xs text-text-secondary">Solicitante</label
+                ><input
+                  type="text"
+                  id="modal-edit-solicitante"
+                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                />
+              </div>
+              <div>
+                <label class="text-xs text-text-secondary">Prioridade</label
+                ><select
+                  id="modal-edit-priority"
+                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                >
+                  <option value="baixa">Baixa</option>
+                  <option value="media">Média</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-text-secondary">Grupo</label
+                ><select
+                  id="modal-edit-group"
+                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                ></select>
+              </div>
             </div>
           </div>
 
@@ -471,21 +573,21 @@
             <nav class="flex space-x-4 -mb-px" id="modal-tabs">
               <button
                 data-tab="tab-notes"
-                class="modal-tab-button border-accent text-accent whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                class="modal-tab-button border-accent text-accent py-2 border-b-2 font-medium text-sm"
               >
-                Notas de Status
+                Notas
               </button>
               <button
                 data-tab="tab-research"
-                class="modal-tab-button border-transparent text-text-secondary hover:text-text-primary hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                class="modal-tab-button border-transparent text-text-secondary hover:text-text-primary py-2 border-b-2 font-medium text-sm"
               >
-                Pesquisa/Links
+                Pesquisa
               </button>
               <button
                 data-tab="tab-finalize"
-                class="modal-tab-button border-transparent text-text-secondary hover:text-text-primary hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm"
+                class="modal-tab-button border-transparent text-text-secondary hover:text-text-primary py-2 border-b-2 font-medium text-sm"
               >
-                Finalizar Compra
+                Finalizar
               </button>
             </nav>
           </div>
@@ -493,150 +595,218 @@
           <div id="modal-tab-content">
             <div id="tab-notes" class="modal-tab-pane space-y-4">
               <form id="modal-add-note-form" class="space-y-2">
-                <label
-                  for="modal-new-note"
-                  class="text-sm font-medium text-text-secondary"
-                  >Adicionar nova nota de status:</label
-                >
                 <textarea
                   id="modal-new-note"
                   rows="2"
-                  class="w-full rounded-md border-0 bg-light p-2 text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-accent"
-                ></textarea>
-                <button
+                  class="w-full rounded-md border-0 bg-light p-2 text-text-primary focus:ring-2 focus:ring-accent"
+                  placeholder="Escreva uma nota..."
+                ></textarea
+                ><button
                   type="submit"
                   class="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
                 >
-                  Salvar Nota
+                  Salvar
                 </button>
               </form>
-              <div class="h-px bg-light"></div>
               <ul
                 id="modal-notes-list"
                 class="space-y-3 max-h-60 overflow-y-auto"
-              >
-                <li class="text-center text-text-secondary">
-                  Carregando notas...
-                </li>
-              </ul>
+              ></ul>
             </div>
-
             <div id="tab-research" class="modal-tab-pane hidden space-y-4">
               <form id="modal-add-research-form" class="space-y-2">
-                <label
-                  for="modal-new-research"
-                  class="text-sm font-medium text-text-secondary"
-                  >Adicionar link de pesquisa (Ex: https://...):</label
-                >
                 <input
                   type="text"
                   id="modal-new-research"
-                  class="w-full rounded-md border-0 bg-light p-2 text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-accent"
-                  placeholder="https_://..."
-                />
-                <button
+                  class="w-full rounded-md border-0 bg-light p-2 text-text-primary focus:ring-2 focus:ring-accent"
+                  placeholder="Link ou info..."
+                /><button
                   type="submit"
                   class="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
                 >
-                  Salvar Link
+                  Salvar
                 </button>
               </form>
-              <div class="h-px bg-light"></div>
               <ul
                 id="modal-research-list"
                 class="space-y-3 max-h-60 overflow-y-auto"
-              >
-                <li class="text-center text-text-secondary">
-                  Carregando links...
-                </li>
-              </ul>
+              ></ul>
             </div>
-
             <div id="tab-finalize" class="modal-tab-pane hidden space-y-4">
               <div
                 id="modal-finalize-error"
-                class="hidden rounded-md bg-yellow-900 p-3 text-sm text-yellow-200"
+                class="hidden rounded-md bg-yellow-900/50 border border-yellow-700 p-3 text-sm text-yellow-200"
               >
-                <p>
-                  O pedido só pode ser finalizado quando estiver nas colunas
-                  "Estagnado" ou "Compra efetuada".
-                </p>
+                <p>Para finalizar, mova o pedido para a coluna correta.</p>
               </div>
-
               <form id="modal-finalize-form" class="space-y-3">
                 <div>
-                  <label
-                    for="modal-link"
-                    class="text-sm font-medium text-text-secondary"
-                    >Link do Produto Comprado</label
-                  >
-                  <input
+                  <label class="text-sm text-text-secondary">Link Compra</label
+                  ><input
                     type="text"
                     id="modal-link"
                     required
-                    class="mt-1 w-full rounded-md border-0 bg-light p-2 text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-accent"
+                    class="w-full rounded-md bg-light p-2 text-text-primary focus:ring-2 focus:ring-accent"
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label
-                      for="modal-price"
-                      class="text-sm font-medium text-text-secondary"
-                      >Preço (Ex: 123.45)</label
-                    >
-                    <input
+                    <label class="text-sm text-text-secondary">Preço</label
+                    ><input
                       type="number"
                       step="0.01"
                       id="modal-price"
                       required
-                      class="mt-1 w-full rounded-md border-0 bg-light p-2 text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-accent"
+                      class="w-full bg-light rounded-md p-2 text-text-primary"
                     />
                   </div>
                   <div>
-                    <label
-                      for="modal-quantity"
-                      class="text-sm font-medium text-text-secondary"
-                      >Quantidade</label
-                    >
-                    <input
+                    <label class="text-sm text-text-secondary">Qtd</label
+                    ><input
                       type="number"
                       id="modal-quantity"
                       required
-                      class="mt-1 w-full rounded-md border-0 bg-light p-2 text-text-primary placeholder:text-text-secondary focus:ring-2 focus:ring-accent"
+                      class="w-full bg-light rounded-md p-2 text-text-primary"
                     />
                   </div>
                 </div>
                 <button
                   type="submit"
-                  class="rounded-md bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-500"
+                  class="w-full rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
                 >
-                  Marcar como Concluído
+                  Salvar Dados
                 </button>
               </form>
-
               <div
                 id="modal-finalize-success"
-                class="hidden rounded-md bg-green-900 p-4 text-center"
+                class="hidden space-y-3 pt-2 border-t border-light"
               >
-                <h4 class="font-semibold text-green-200">
-                  Pedido Finalizado com Sucesso!
-                </h4>
-                <p class="text-sm text-green-300 mt-1">
-                  Os dados da compra foram salvos.
-                </p>
-                <button
-                  id="modal-report-button"
-                  type="button"
-                  class="mt-3 rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
+                <div
+                  class="bg-green-900/30 p-3 rounded text-center text-green-300 text-sm"
                 >
-                  Ver Relatório de Compra
-                </button>
+                  Dados salvos!
+                </div>
+                <div id="modal-finalize-actions" class="flex space-x-2">
+                  <button
+                    id="modal-report-button"
+                    type="button"
+                    class="flex-1 rounded-md bg-light px-3 py-2 text-sm font-semibold text-text-primary hover:bg-gray-600"
+                  >
+                    Ver Relatório</button
+                  ><button
+                    id="modal-deliver-button"
+                    class="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-500"
+                  >
+                    Entregar Pedido
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <div
+      id="custom-alert-modal"
+      class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm transition-opacity"
+    >
+      <div
+        class="bg-medium p-6 rounded-lg shadow-2xl border border-light max-w-sm w-full text-center transform transition-all scale-100"
+      >
+        <div
+          class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-accent/20 mb-4"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-accent"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        </div>
+        <h3
+          class="text-lg leading-6 font-medium text-text-primary"
+          id="custom-alert-title"
+        >
+          Atenção
+        </h3>
+        <div class="mt-2">
+          <p class="text-sm text-text-secondary" id="custom-alert-message">
+            Mensagem aqui.
+          </p>
+        </div>
+        <div class="mt-5">
+          <button
+            id="custom-alert-ok"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-accent text-base font-medium text-white hover:bg-accent-hover sm:text-sm"
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="custom-confirm-modal"
+      class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm"
+    >
+      <div
+        class="bg-medium p-6 rounded-lg shadow-2xl border border-light max-w-sm w-full text-center"
+      >
+        <div
+          class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-500/20 mb-4"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-yellow-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+        <h3
+          class="text-lg leading-6 font-medium text-text-primary"
+          id="custom-confirm-title"
+        >
+          Confirmar Ação
+        </h3>
+        <div class="mt-2">
+          <p class="text-sm text-text-secondary" id="custom-confirm-message">
+            Tem certeza?
+          </p>
+        </div>
+        <div class="mt-5 flex space-x-3">
+          <button
+            id="custom-confirm-cancel"
+            class="flex-1 inline-flex justify-center rounded-md border border-light shadow-sm px-4 py-2 bg-transparent text-base font-medium text-text-secondary hover:text-text-primary sm:text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            id="custom-confirm-ok"
+            class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-accent text-base font-medium text-white hover:bg-accent-hover sm:text-sm"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="/js/app.js"></script>
   </body>
 </html>

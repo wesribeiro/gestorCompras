@@ -1,93 +1,145 @@
-const express = require("express");
-const db = require("../database/database");
-const { isAuthenticated, isAdmin } = require("../middleware/authMiddleware");
+document.addEventListener("DOMContentLoaded", () => {
+  // Elementos da UI
+  const toggleButton = document.getElementById("toggle-approval");
+  const toggleHandle = document.getElementById("toggle-approval-handle");
+  const statusMessage = document.getElementById("status-message");
+  const backButton = document.querySelector('a[href="index.html"]');
 
-const router = express.Router();
+  let currentUser = null;
+  let currentSettings = {};
 
-// Aplica o middleware 'isAuthenticated'
-router.use(isAuthenticated);
+  // Estado local para o toggle
+  let isApprovalEnabled = false;
 
-/**
- * Rota: GET /api/settings
- * Objetivo: Buscar todas as configurações da aplicação.
- */
-router.get("/", (req, res) => {
-  const sql = `SELECT setting_key, setting_value FROM ApplicationSettings`;
+  /**
+   * Função principal: Verifica a sessão e autorização
+   */
+  async function initializePage() {
+    try {
+      // 1. Verificar quem está logado
+      const authResponse = await fetch("/api/auth/check");
+      if (!authResponse.ok) throw new Error("Falha na autenticação");
 
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      console.error("Erro ao buscar configurações:", err.message);
-      return res.status(500).json({ message: "Erro interno do servidor." });
-    }
-
-    const settings = rows.reduce((acc, row) => {
-      if (row.setting_value === "true") {
-        acc[row.setting_key] = true;
-      } else if (row.setting_value === "false") {
-        acc[row.setting_key] = false;
-      } else {
-        acc[row.setting_key] = row.setting_value;
+      const authData = await authResponse.json();
+      if (!authData.loggedIn || !authData.user) {
+        redirectToLogin();
+        return;
       }
-      return acc;
-    }, {});
+      currentUser = authData.user;
 
-    res.json(settings);
-  });
-});
+      // 2. VERIFICAR AUTORIZAÇÃO (MUITO IMPORTANTE)
+      if (currentUser.role !== "admin") {
+        document.body.innerHTML = `<div class="p-10 text-center text-red-400">
+                                            <h1 class="text-2xl font-bold">Acesso Negado</h1>
+                                            <p class="mt-2">Apenas administradores podem aceder a esta página.</p>
+                                            <a href="index.html" class="mt-4 inline-block rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-500">Voltar ao Kanban</a>
+                                           </div>`;
+        return;
+      }
 
-/**
- * Rota: PUT /api/settings/approval_workflow
- * Objetivo: Atualizar a configuração do fluxo de aprovação.
- * Protegido: Apenas Admin
- */
-router.put("/approval_workflow", isAdmin, (req, res) => {
-  const { value } = req.body;
-  const userId = req.session.user.id;
+      // 3. Se for admin, buscar as configurações
+      const settingsResponse = await fetch("/api/settings");
+      if (!settingsResponse.ok)
+        throw new Error("Falha ao buscar configurações");
 
-  if (typeof value !== "boolean") {
-    return res
-      .status(400)
-      .json({ message: "Valor inválido. Esperado um booleano (true/false)." });
+      currentSettings = await settingsResponse.json();
+      isApprovalEnabled = currentSettings.approval_workflow_enabled || false;
+
+      // 4. Atualizar a UI com o estado atual
+      updateToggleUI(isApprovalEnabled, false); // false = sem transição
+
+      // 5. Adicionar o listener ao botão
+      toggleButton.addEventListener("click", handleToggleClick);
+    } catch (error) {
+      console.error("Erro ao inicializar página de configurações:", error);
+      statusMessage.textContent = `Erro: ${error.message}`;
+      statusMessage.className = "text-sm text-red-400";
+    }
   }
 
-  const settingValueString = value ? "true" : "false";
-  const settingKey = "approval_workflow_enabled";
+  /**
+   * Atualiza a aparência do botão toggle
+   */
+  function updateToggleUI(isEnabled, useTransition = true) {
+    // Atualiza o estado visual
+    if (isEnabled) {
+      toggleButton.classList.remove("bg-gray-600");
+      toggleButton.classList.add("bg-indigo-600");
+      toggleHandle.classList.add("translate-x-5");
+    } else {
+      toggleButton.classList.remove("bg-indigo-600");
+      toggleButton.classList.add("bg-gray-600");
+      toggleHandle.classList.remove("translate-x-5");
+    }
 
-  db.serialize(() => {
-    const updateSql = `UPDATE ApplicationSettings SET setting_value = ? WHERE setting_key = ?`;
+    // Adiciona/Remove classes de transição (útil na carga inicial)
+    const transitionClass = "transition";
+    if (useTransition) {
+      toggleButton.classList.add(transitionClass);
+      toggleHandle.classList.add(transitionClass);
+    } else {
+      toggleButton.classList.remove(transitionClass);
+      toggleHandle.classList.remove(transitionClass);
+    }
 
-    db.run(updateSql, [settingValueString, settingKey], function (err) {
-      if (err) {
-        console.error("Erro ao atualizar configuração:", err.message);
-        return res
-          .status(500)
-          .json({ message: "Erro ao atualizar configuração." });
+    // Atualiza o atributo 'aria-checked' para acessibilidade
+    toggleButton.setAttribute("aria-checked", isEnabled.toString());
+  }
+
+  /**
+   * Chamado quando o botão toggle é clicado
+   */
+  async function handleToggleClick() {
+    const newState = !isApprovalEnabled; // O estado que queremos salvar
+
+    // Desativa o botão temporariamente para evitar cliques duplos
+    toggleButton.disabled = true;
+    statusMessage.textContent = "A guardar...";
+    statusMessage.className = "text-sm text-yellow-400";
+
+    try {
+      // Chamar a API para salvar a nova configuração
+      const response = await fetch("/api/settings/approval_workflow", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: newState }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Falha ao guardar configuração");
       }
 
-      const auditAction = `Alterou a configuração '${settingKey}' para '${settingValueString}'.`;
-      const auditSql = `INSERT INTO AuditLog (user_id, action, target_type) VALUES (?, ?, ?)`;
-
-      db.run(auditSql, [userId, auditAction, "Setting"], (auditErr) => {
-        if (auditErr) {
-          console.error(
-            "Erro ao salvar no log de auditoria:",
-            auditErr.message
-          );
-          return res
-            .status(500)
-            .json({
-              message:
-                "Configuração atualizada, mas falha ao registrar auditoria.",
-            });
+      // Sucesso!
+      isApprovalEnabled = newState; // Atualiza o estado local
+      updateToggleUI(isApprovalEnabled); // Atualiza a UI
+      statusMessage.textContent = "Configuração guardada com sucesso!";
+      statusMessage.className = "text-sm text-green-400";
+    } catch (error) {
+      console.error("Erro ao guardar configuração:", error);
+      statusMessage.textContent = `Erro: ${error.message}`;
+      statusMessage.className = "text-sm text-red-400";
+      // Reverte a UI para o estado antigo (já que falhou)
+      updateToggleUI(isApprovalEnabled);
+    } finally {
+      // Reativa o botão
+      toggleButton.disabled = false;
+      // Limpa a mensagem de status após alguns segundos
+      setTimeout(() => {
+        if (statusMessage.className.includes("green")) {
+          statusMessage.textContent = "";
         }
+      }, 3000);
+    }
+  }
 
-        res.json({
-          success: true,
-          message: "Configuração atualizada com sucesso.",
-        });
-      });
-    });
-  });
+  /**
+   * Redireciona para o login
+   */
+  function redirectToLogin() {
+    window.location.href = "login.html";
+  }
+
+  // --- Ponto de Entrada ---
+  initializePage();
 });
-
-module.exports = router;

@@ -5,27 +5,34 @@ const saltRounds = 10;
 const adminPassword = "nilo@@";
 const adminUsername = "admin";
 
-// Queries para criar as tabelas
 const createTablesQueries = `
-    -- Tabela de Setores (Centros de Custo)
-    CREATE TABLE IF NOT EXISTS Departments (
+    CREATE TABLE IF NOT EXISTS Groups (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
-    -- Tabela de Usuários
     CREATE TABLE IF NOT EXISTS Users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        department_id INTEGER NOT NULL,
+        group_id INTEGER NOT NULL,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         role TEXT NOT NULL CHECK(role IN ('admin', 'director', 'buyer', 'assistant', 'requester')),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (department_id) REFERENCES Departments (id)
+        FOREIGN KEY (group_id) REFERENCES Groups (id)
     );
 
-    -- Tabela de Solicitações de Compra (Feitas pelos solicitantes)
+    -- NOVA TABELA: Colunas do Kanban (Filas Dinâmicas)
+    CREATE TABLE IF NOT EXISTS KanbanColumns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        color TEXT NOT NULL, -- Ex: 'blue', 'yellow', 'red', 'green'
+        position INTEGER NOT NULL,
+        is_initial BOOLEAN DEFAULT 0, -- Se é a fila onde novos pedidos caem
+        allows_completion BOOLEAN DEFAULT 0, -- Se permite preencher dados de compra
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS PurchaseRequests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         requester_id INTEGER NOT NULL,
@@ -33,7 +40,7 @@ const createTablesQueries = `
         description TEXT,
         justification TEXT,
         reference_links TEXT,
-        status TEXT NOT NULL DEFAULT 'pending_approval' CHECK(status IN ('pending_approval', 'denied', 'approved')),
+        status TEXT NOT NULL DEFAULT 'pending_buyer_review',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         approver_id INTEGER,
         approval_date DATETIME,
@@ -42,59 +49,65 @@ const createTablesQueries = `
         FOREIGN KEY (approver_id) REFERENCES Users (id)
     );
 
-    -- Tabela dos Cartões do Kanban (RENOMEADA)
     CREATE TABLE IF NOT EXISTS KanbanPedidos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         request_id INTEGER, 
         title TEXT NOT NULL,
-        column TEXT NOT NULL DEFAULT 'pedido_compra' CHECK(column IN ('pedido_compra', 'em_cotacao', 'estagnado', 'compra_efetuada')),
-        task_created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- (Nome da coluna mantido por consistência interna, mas representa 'pedido')
+        
+        -- MUDANÇA: Referência à tabela de colunas em vez de texto fixo
+        column_id INTEGER NOT NULL, 
+        
+        priority TEXT NOT NULL DEFAULT 'baixa',
+        solicitante_name TEXT,
+        
+        -- Status do ciclo de vida ('active' = na fila, 'completed' = entregue/arquivado)
+        lifecycle_status TEXT NOT NULL DEFAULT 'active', 
+
+        task_created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         purchase_link TEXT,
         purchased_price REAL,
         purchased_quantity INTEGER,
         report_generated_at DATETIME,
+        
         created_by_user_id INTEGER, 
-        department_id INTEGER, 
+        group_id INTEGER,
 
+        FOREIGN KEY (column_id) REFERENCES KanbanColumns (id),
         FOREIGN KEY (request_id) REFERENCES PurchaseRequests (id) ON DELETE SET NULL,
         FOREIGN KEY (created_by_user_id) REFERENCES Users (id) ON DELETE SET NULL,
-        FOREIGN KEY (department_id) REFERENCES Departments (id) ON DELETE SET NULL
+        FOREIGN KEY (group_id) REFERENCES Groups (id) ON DELETE SET NULL
     );
 
-    -- Tabela de Notas de Status (RENOMEADA)
     CREATE TABLE IF NOT EXISTS PedidoNotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        pedido_id INTEGER NOT NULL, -- (RENOMEADO de task_id)
+        pedido_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
         content TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (pedido_id) REFERENCES KanbanPedidos (id) ON DELETE CASCADE, -- (ATUALIZADO)
+        FOREIGN KEY (pedido_id) REFERENCES KanbanPedidos (id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES Users (id)
     );
 
-    -- Tabela de Pesquisas (RENOMEADA)
     CREATE TABLE IF NOT EXISTS PedidoResearch (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        pedido_id INTEGER NOT NULL, -- (RENOMEADO de task_id)
+        pedido_id INTEGER NOT NULL,
         user_id INTEGER NOT NULL,
         content TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (pedido_id) REFERENCES KanbanPedidos (id) ON DELETE CASCADE, -- (ATUALIZADO)
+        FOREIGN KEY (pedido_id) REFERENCES KanbanPedidos (id) ON DELETE CASCADE,
         FOREIGN KEY (user_id) REFERENCES Users (id)
     );
 
-    -- Tabela de Log de Auditoria
     CREATE TABLE IF NOT EXISTS AuditLog (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         action TEXT NOT NULL,
-        target_type TEXT, -- (Ex: 'Pedido', 'User', 'Setting')
+        target_type TEXT,
         target_id INTEGER,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES Users (id)
     );
 
-    -- Tabela de Configurações
     CREATE TABLE IF NOT EXISTS ApplicationSettings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         setting_key TEXT UNIQUE NOT NULL,
@@ -103,118 +116,102 @@ const createTablesQueries = `
     );
 `;
 
-// Função para inicializar o banco de dados
 function initializeDatabase() {
   db.serialize(async () => {
-    console.log("Executando script de schema...");
-
+    console.log("Executando script de schema v3.0 (Dinâmico)...");
     db.exec(createTablesQueries, (err) => {
-      if (err) {
-        console.error("Erro ao criar tabelas:", err.message);
-      } else {
-        console.log("Tabelas verificadas/criadas com sucesso.");
-        insertInitialData();
-      }
+      if (err) console.error("Erro tabelas:", err.message);
+      else insertInitialData();
     });
   });
 }
 
-// Função para inserir dados iniciais (Admin, Setor Padrão e Configurações)
 async function insertInitialData() {
-  const defaultDeptName = "Administração";
-
   try {
-    // 2. Cria o setor padrão
-    const deptInsert = await new Promise((resolve, reject) => {
+    // 1. Criar Grupo Admin
+    const groupName = "Administração";
+    await new Promise((resolve) => {
       db.run(
-        `INSERT INTO Departments (name) VALUES (?)
-                    ON CONFLICT(name) DO NOTHING`,
-        [defaultDeptName],
-        function (err) {
-          if (err) return reject(err);
-          resolve(this.lastID);
-        }
+        `INSERT INTO Groups (name) VALUES (?) ON CONFLICT(name) DO NOTHING`,
+        [groupName],
+        resolve
       );
     });
+    const group = await new Promise((resolve) =>
+      db.get(`SELECT id FROM Groups WHERE name = ?`, [groupName], (err, row) =>
+        resolve(row)
+      )
+    );
 
-    let deptId = deptInsert;
-    if (deptId === 0) {
-      const row = await new Promise((resolve, reject) => {
-        db.get(
-          `SELECT id FROM Departments WHERE name = ?`,
-          [defaultDeptName],
-          (err, row) => {
-            if (err) return reject(err);
-            resolve(row);
-          }
-        );
-      });
-      deptId = row.id;
-    }
-
-    if (!deptId)
-      throw new Error("Não foi possível obter o ID do setor de Administração");
-    console.log(`Setor '${defaultDeptName}' pronto (ID: ${deptId}).`);
-
-    // 3. Cria o usuário admin
-    const user = await new Promise((resolve, reject) => {
+    // 2. Criar Usuário Admin
+    const user = await new Promise((resolve) =>
       db.get(
         `SELECT id FROM Users WHERE username = ?`,
         [adminUsername],
-        (err, row) => {
-          if (err) return reject(err);
-          resolve(row);
-        }
-      );
-    });
-
+        (err, row) => resolve(row)
+      )
+    );
     if (!user) {
       const hash = await bcrypt.hash(adminPassword, saltRounds);
-      await new Promise((resolve, reject) => {
-        db.run(
-          `INSERT INTO Users (department_id, username, password_hash, role)
-                        VALUES (?, ?, ?, 'admin')`,
-          [deptId, adminUsername, hash],
-          function (err) {
-            if (err) return reject(err);
-            console.log(
-              `Usuário 'admin' (ID: ${this.lastID}) criado com sucesso.`
-            );
-            resolve();
-          }
-        );
-      });
-    } else {
-      console.log("Usuário 'admin' já existe.");
+      db.run(
+        `INSERT INTO Users (group_id, username, password_hash, role) VALUES (?, ?, ?, 'admin')`,
+        [group.id, adminUsername, hash]
+      );
+      console.log("Usuário Admin criado.");
     }
 
-    // 4. Insere a configuração padrão
-    const settingKey = "approval_workflow_enabled";
-    const settingValue = "false";
+    // 3. INSERIR COLUNAS PADRÃO (Se não existirem)
+    // Cores disponíveis no Tailwind: blue, yellow, red, green, purple, pink, gray
+    const defaultColumns = [
+      {
+        title: "Pedido de compra",
+        color: "blue",
+        pos: 1,
+        initial: 1,
+        complete: 0,
+      },
+      { title: "Em cotação", color: "yellow", pos: 2, initial: 0, complete: 0 },
+      { title: "Estagnado", color: "red", pos: 3, initial: 0, complete: 0 },
+      {
+        title: "Compra efetuada",
+        color: "green",
+        pos: 4,
+        initial: 0,
+        complete: 1,
+      }, // allows_completion = 1
+    ];
 
-    await new Promise((resolve, reject) => {
+    const colsExist = await new Promise((resolve) =>
+      db.get("SELECT count(*) as count FROM KanbanColumns", (err, row) =>
+        resolve(row.count)
+      )
+    );
+
+    if (colsExist === 0) {
+      console.log("Inserindo colunas padrão...");
+      const stmt = db.prepare(
+        `INSERT INTO KanbanColumns (title, color, position, is_initial, allows_completion) VALUES (?, ?, ?, ?, ?)`
+      );
+      defaultColumns.forEach((c) =>
+        stmt.run(c.title, c.color, c.pos, c.initial, c.complete)
+      );
+      stmt.finalize();
+    }
+
+    // 4. Configurações
+    const defaultSettings = [
+      { key: "module_kanban_enabled", value: "true" },
+      { key: "module_solicitacao_enabled", value: "false" },
+      { key: "module_aprovacao_diretor_enabled", value: "false" },
+    ];
+    defaultSettings.forEach((s) => {
       db.run(
-        `INSERT INTO ApplicationSettings (setting_key, setting_value)
-                    VALUES (?, ?)
-                    ON CONFLICT(setting_key) DO NOTHING`,
-        [settingKey, settingValue],
-        function (err) {
-          if (err) return reject(err);
-          if (this.changes > 0) {
-            console.log(
-              `Configuração padrão '${settingKey}' definida como '${settingValue}'.`
-            );
-          } else {
-            console.log(`Configuração '${settingKey}' já existente.`);
-          }
-          resolve();
-        }
+        `INSERT INTO ApplicationSettings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT(setting_key) DO NOTHING`,
+        [s.key, s.value]
       );
     });
-
-    console.log("Inicialização do banco de dados concluída.");
   } catch (err) {
-    console.error("Erro ao inserir dados iniciais:", err.message);
+    console.error("Erro dados iniciais:", err.message);
   }
 }
 

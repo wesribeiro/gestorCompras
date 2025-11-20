@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Gestor de Compras</title>
+    <link href="/css/style.css" rel="stylesheet" />
+    <script>
+      if (
+        localStorage.theme === "dark" ||
+        (!("theme" in localStorage) &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    </script>
+  </head>
+  <body class="h-full bg-dark text-text-primary flex flex-col">
+    <header
+      class="bg-medium border-b border-light p-4 flex justify-between items-center"
+    >
+      <div class="flex items-center">
+        <a
+          href="index.html"
+          class="mr-4 text-text-secondary hover:text-text-primary"
+        >
+          &larr; Voltar
+        </a>
+        <h1 class="text-xl font-bold">Painel Administrativo</h1>
+      </div>
+    </header>
+
+    <main class="flex-1 container mx-auto p-6 max-w-4xl">
+      <div class="flex space-x-4 border-b border-light mb-6">
+        <button
+          id="tab-users-btn"
+          class="py-2 px-4 border-b-2 border-accent text-accent font-medium focus:outline-none transition-colors"
+        >
+          Gerenciar Usuários
+        </button>
+        <button
+          id="tab-groups-btn"
+          class="py-2 px-4 border-b-2 border-transparent text-text-secondary hover:text-text-primary focus:outline-none transition-colors"
+        >
+          Gerenciar Grupos
+        </button>
+      </div>
+
+      <div id="tab-users-content">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Lista de Usuários</h2>
+          <button
+            onclick="document.getElementById('new-user-modal').classList.remove('hidden')"
+            class="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-md text-sm transition-colors"
+          >
+            Novo Usuário
+          </button>
+        </div>
+        <div
+          class="bg-medium rounded-lg overflow-hidden shadow border border-light"
+        >
+          <table class="w-full text-left text-sm">
+            <thead class="bg-light text-text-primary">
+              <tr>
+                <th class="p-3">Usuário</th>
+                <th class="p-3">Papel (Role)</th>
+                <th class="p-3">Grupo</th>
+                <th class="p-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody
+              id="users-list-body"
+              class="divide-y divide-light text-text-secondary"
+            ></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button
+        id="tab-archived-btn"
+        class="py-2 px-4 border-b-2 border-transparent text-text-secondary hover:text-text-primary focus:outline-none transition-colors whitespace-nowrap"
+      >
+        Pedidos Finalizados
+      </button>
+
+      <div id="tab-groups-content" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Lista de Grupos</h2>
+          <button
+            onclick="document.getElementById('new-group-modal').classList.remove('hidden')"
+            class="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-md text-sm transition-colors"
+          >
+            Novo Grupo
+          </button>
+        </div>
+        <div
+          class="bg-medium rounded-lg overflow-hidden shadow border border-light"
+        >
+          <table class="w-full text-left text-sm">
+            <thead class="bg-light text-text-primary">
+              <tr>
+                <th class="p-3">Nome do Grupo</th>
+                <th class="p-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody
+              id="groups-list-body"
+              class="divide-y divide-light text-text-secondary"
+            ></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="new-user-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+    >
+      <div class="bg-medium p-6 rounded-lg w-96 border border-light shadow-xl">
+        <h3 class="text-lg font-bold text-text-primary mb-4">Novo Usuário</h3>
+        <form id="new-user-form" class="space-y-4">
+          <input
+            type="text"
+            name="username"
+            placeholder="Nome de Usuário"
+            required
+            class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Senha"
+            required
+            class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+          />
+          <select
+            name="role"
+            required
+            class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+          >
+            <option value="requester">Solicitante</option>
+            <option value="buyer">Comprador</option>
+            <option value="director">Diretor</option>
+            <option value="assistant">Assistente</option>
+            <option value="admin">Administrador</option>
+          </select>
+          <select
+            name="group_id"
+            id="user-group-select"
+            required
+            class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+          >
+            <option value="">Carregando grupos...</option>
+          </select>
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('new-user-modal').classList.add('hidden')"
+              class="text-text-secondary hover:text-text-primary px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-accent text-white px-3 py-2 rounded hover:bg-accent-hover"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="edit-user-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+    >
+      <div class="bg-medium p-6 rounded-lg w-96 border border-light shadow-xl">
+        <h3 class="text-lg font-bold text-text-primary mb-4">Editar Usuário</h3>
+        <form id="edit-user-form" class="space-y-4">
+          <input type="hidden" name="id" id="edit-user-id" />
+
+          <div>
+            <label class="text-xs text-text-secondary">Nome de Usuário</label>
+            <input
+              type="text"
+              name="username"
+              id="edit-user-username"
+              required
+              class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+            />
+          </div>
+
+          <div>
+            <label class="text-xs text-text-secondary"
+              >Nova Senha (deixe em branco para manter)</label
+            >
+            <input
+              type="password"
+              name="password"
+              placeholder="Nova Senha (Opcional)"
+              class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+            />
+          </div>
+
+          <div>
+            <label class="text-xs text-text-secondary">Papel</label>
+            <select
+              name="role"
+              id="edit-user-role"
+              required
+              class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+            >
+              <option value="requester">Solicitante</option>
+              <option value="buyer">Comprador</option>
+              <option value="director">Diretor</option>
+              <option value="assistant">Assistente</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs text-text-secondary">Grupo</label>
+            <select
+              name="group_id"
+              id="edit-user-group-select"
+              required
+              class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+            ></select>
+          </div>
+
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('edit-user-modal').classList.add('hidden')"
+              class="text-text-secondary hover:text-text-primary px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-accent text-white px-3 py-2 rounded hover:bg-accent-hover"
+            >
+              Atualizar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="new-group-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+    >
+      <div class="bg-medium p-6 rounded-lg w-96 border border-light shadow-xl">
+        <h3 class="text-lg font-bold text-text-primary mb-4">Novo Grupo</h3>
+        <form id="new-group-form" class="space-y-4">
+          <input
+            type="text"
+            name="name"
+            placeholder="Nome do Grupo (Ex: Marketing)"
+            required
+            class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+          />
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('new-group-modal').classList.add('hidden')"
+              class="text-text-secondary hover:text-text-primary px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-accent text-white px-3 py-2 rounded hover:bg-accent-hover"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="edit-group-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+    >
+      <div class="bg-medium p-6 rounded-lg w-96 border border-light shadow-xl">
+        <h3 class="text-lg font-bold text-text-primary mb-4">Editar Grupo</h3>
+        <form id="edit-group-form" class="space-y-4">
+          <input type="hidden" name="id" id="edit-group-id" />
+          <div>
+            <label class="text-xs text-text-secondary">Nome do Grupo</label>
+            <input
+              type="text"
+              name="name"
+              id="edit-group-name"
+              required
+              class="w-full bg-light border-0 rounded p-2 text-text-primary focus:ring-2 focus:ring-accent"
+            />
+          </div>
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('edit-group-modal').classList.add('hidden')"
+              class="text-text-secondary hover:text-text-primary px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-accent text-white px-3 py-2 rounded hover:bg-accent-hover"
+            >
+              Atualizar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="tab-archived-content" class="hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold">Pedidos Finalizados/Arquivados</h2>
+      </div>
+      <div
+        class="bg-medium rounded-lg overflow-hidden shadow border border-light"
+      >
+        <table class="w-full text-left text-sm">
+          <thead class="bg-light text-text-primary">
+            <tr>
+              <th class="p-3">Título</th>
+              <th class="p-3">Solicitante</th>
+              <th class="p-3">Finalizado Em</th>
+              <th class="p-3 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody
+            id="archived-list-body"
+            class="divide-y divide-light text-text-secondary"
+          ></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

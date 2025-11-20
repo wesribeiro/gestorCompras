@@ -5,9 +5,11 @@ const { initializeDatabase } = require("./database/schema");
 
 // Importação das rotas
 const authRoutes = require("./routes/auth");
-const pedidoRoutes = require("./routes/pedidos"); // <-- ATUALIZADO
+const pedidoRoutes = require("./routes/pedidos");
 const settingsRoutes = require("./routes/settings");
-const departmentRoutes = require("./routes/departments");
+const groupRoutes = require("./routes/groups");
+const userRoutes = require("./routes/users");
+const columnRoutes = require("./routes/columns"); // <--- NOVO (Etapa v3)
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -19,8 +21,8 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Em produção, mude para 'true' se usar HTTPS
-      maxAge: 1000 * 60 * 60 * 24, // 1 dia de duração
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 24, // 1 dia
     },
   })
 );
@@ -29,24 +31,18 @@ app.use(
 const publicPath = path.join(__dirname, "..", "public");
 
 // Middlewares
-app.use(express.static(publicPath)); // Servir arquivos estáticos
-app.use(express.json()); // Parsear JSON
+app.use(express.static(publicPath));
+app.use(express.json());
 
 // --- ROTAS DA API ---
-// Rotas de Autenticação (públicas e de sessão)
 app.use("/api/auth", authRoutes);
-
-// Rotas do Kanban (Protegidas)
-app.use("/api/pedidos", pedidoRoutes); // <-- ATUALIZADO
-
-// Rotas de Configurações (Protegidas)
+app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/settings", settingsRoutes);
-
-// Rotas de Setores (Protegidas)
-app.use("/api/departments", departmentRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/columns", columnRoutes); // <--- REGISTRO DA NOVA ROTA
 
 // --- ROTAS DO FRONTEND ---
-// Rota principal - por enquanto, ela serve a página de login
 app.get("/", (req, res) => {
   res.sendFile(path.join(publicPath, "login.html"));
 });
