@@ -6,110 +6,204 @@
     <title>Relatório de Compra</title>
     <link href="/css/style.css" rel="stylesheet" />
     <style>
-      /* Estilos específicos para impressão */
       @media print {
         body {
           background-color: #ffffff;
           color: #000000;
         }
-        /* Esconde o botão de imprimir */
         .no-print {
           display: none;
         }
-        /* Garante que o conteúdo ocupe a página */
         .print-container {
           box-shadow: none;
           border: none;
+          width: 100%;
+          max-width: 100%;
+          padding: 0;
+          margin: 0;
+        }
+        a {
+          text-decoration: none;
+          color: #000000;
         }
       }
     </style>
   </head>
-  <body class="bg-gray-700 p-8">
+  <body
+    class="bg-gray-100 dark:bg-gray-900 p-8 min-h-screen transition-colors duration-200"
+  >
     <div
-      class="print-container max-w-4xl mx-auto bg-white text-gray-900 rounded-lg shadow-xl p-8 md:p-12"
+      class="print-container max-w-4xl mx-auto bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-xl p-8 md:p-12 border border-gray-200 dark:border-gray-700"
     >
-      <div class="flex justify-between items-center border-b pb-4 mb-6">
+      <div
+        class="flex justify-between items-start border-b border-gray-200 dark:border-gray-700 pb-6 mb-6"
+      >
         <div>
-          <h1 class="text-3xl font-bold">Relatório de Pedido de Compra</h1>
-          <p id="report-id" class="text-lg text-gray-600">ID do Pedido: ...</p>
+          <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+            Pedido de Compra
+          </h1>
+          <p
+            id="report-id"
+            class="text-lg text-gray-500 dark:text-gray-400 mt-1"
+          >
+            ID: ...
+          </p>
+          <p
+            id="report-origin"
+            class="text-sm font-bold tracking-wider mt-1 uppercase"
+          >
+            ...
+          </p>
         </div>
         <div class="text-right">
           <img
-            src="https://ssl.gstatic.com/tasks/bundles/prod/68001201_task_emptystate_dark.svg"
-            alt="Logo"
-            class="h-16 w-16 opacity-50"
+            src="/img/logonilo.png"
+            alt="Logo Nilo"
+            class="h-20 w-auto mb-2 ml-auto object-contain"
           />
-          <p class="text-sm text-gray-500 mt-2">Gestor de Compras</p>
+          <p class="text-sm text-gray-400">Relatório Oficial</p>
         </div>
       </div>
 
-      <div class="no-print mb-6 text-right">
+      <div class="no-print mb-8 flex justify-end gap-3">
+        <button
+          onclick="window.close()"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+        >
+          Fechar
+        </button>
         <button
           id="print-button"
-          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm transition-colors font-medium flex items-center"
         >
-          Imprimir Relatório
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+            />
+          </svg>
+          Imprimir
         </button>
       </div>
 
       <section class="mb-8">
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
-          Detalhes do Pedido
+        <h2
+          class="text-lg font-semibold border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 uppercase tracking-wider text-gray-500 dark:text-gray-400"
+        >
+          Dados do Pedido
         </h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
           <div>
-            <strong class="block text-gray-600">Título do Pedido:</strong>
-            <span id="report-title">...</span>
-          </div>
-          <div>
-            <strong class="block text-gray-600"
-              >Setor (Centro de Custo):</strong
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Título</span
             >
-            <span id="report-department">...</span>
+            <span id="report-title" class="text-lg font-medium block">...</span>
           </div>
           <div>
-            <strong class="block text-gray-600"
-              >Responsável (Criador/Solicitante):</strong
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Status Atual</span
             >
-            <span id="report-responsible">...</span>
+            <span id="report-status" class="text-lg font-medium block"
+              >...</span
+            >
           </div>
           <div>
-            <strong class="block text-gray-600">Data de Criação:</strong>
-            <span id="report-created-at">...</span>
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Solicitante</span
+            >
+            <span id="report-responsible" class="block">...</span>
           </div>
           <div>
-            <strong class="block text-gray-600">Status Atual:</strong>
-            <span id="report-status">...</span>
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Grupo (Setor)</span
+            >
+            <span id="report-department" class="block">...</span>
+          </div>
+          <div>
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Data de Criação</span
+            >
+            <span id="report-created-at" class="block">...</span>
+          </div>
+          <div>
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Prioridade</span
+            >
+            <span id="report-priority" class="block uppercase">...</span>
           </div>
         </div>
       </section>
 
-      <section class="mb-8">
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
-          Informações da Compra
+      <section
+        class="mb-8 bg-gray-50 dark:bg-gray-700/30 p-5 rounded border border-gray-200 dark:border-gray-600"
+      >
+        <h2
+          class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-2"
+        >
+          Descrição / Especificações
+        </h2>
+        <p
+          id="report-description"
+          class="text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed text-base"
+        >
+          ...
+        </p>
+      </section>
+
+      <section class="mb-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h2 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-300">
+          Dados da Compra
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <strong class="block text-gray-600"
-              >Preço (Unitário ou Total):</strong
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Valor Total</span
             >
-            <span id="report-price">...</span>
+            <span
+              id="report-price"
+              class="text-xl font-bold text-green-600 dark:text-green-400"
+              >...</span
+            >
           </div>
           <div>
-            <strong class="block text-gray-600">Quantidade:</strong>
-            <span id="report-quantity">...</span>
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Quantidade</span
+            >
+            <span id="report-quantity" class="text-lg">...</span>
           </div>
           <div>
-            <strong class="block text-gray-600">Data da Finalização:</strong>
-            <span id="report-finalized-at">...</span>
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Finalizado em</span
+            >
+            <span id="report-finalized-at" class="text-lg">...</span>
           </div>
-          <div class="md:col-span-3">
-            <strong class="block text-gray-600">Link da Compra:</strong>
+          <div class="md:col-span-3 mt-2">
+            <span
+              class="block text-xs text-gray-500 dark:text-gray-400 uppercase font-bold"
+              >Link / Fornecedor</span
+            >
             <a
               id="report-link"
               href="#"
               target="_blank"
-              class="text-blue-600 hover:underline break-all"
+              class="text-blue-600 dark:text-blue-400 hover:underline break-all"
               >...</a
             >
           </div>
@@ -117,20 +211,30 @@
       </section>
 
       <section class="mb-8">
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
-          Histórico de Status (Notas)
+        <h2
+          class="text-lg font-semibold border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 uppercase tracking-wider text-gray-500 dark:text-gray-400"
+        >
+          Histórico de Notas
         </h2>
-        <ul id="report-notes-list" class="space-y-3">
-          <li>Carregando histórico...</li>
+        <ul
+          id="report-notes-list"
+          class="space-y-0 divide-y divide-gray-200 dark:divide-gray-700"
+        >
+          <li class="py-2 text-gray-500 italic">Carregando...</li>
         </ul>
       </section>
 
       <section>
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">
-          Links de Pesquisa Utilizados
+        <h2
+          class="text-lg font-semibold border-b border-gray-200 dark:border-gray-700 pb-2 mb-4 uppercase tracking-wider text-gray-500 dark:text-gray-400"
+        >
+          Links de Pesquisa
         </h2>
-        <ul id="report-research-list" class="space-y-3">
-          <li>Carregando links...</li>
+        <ul
+          id="report-research-list"
+          class="space-y-0 divide-y divide-gray-200 dark:divide-gray-700"
+        >
+          <li class="py-2 text-gray-500 italic">Carregando...</li>
         </ul>
       </section>
     </div>

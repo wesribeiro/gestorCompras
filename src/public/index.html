@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gestor de Compras v3.1</title>
+    <title>Gestor de Compras</title>
     <link href="/css/style.css" rel="stylesheet" />
     <script>
       if (
@@ -18,41 +18,63 @@
     </script>
   </head>
   <body
-    class="flex h-full overflow-hidden bg-dark text-text-primary transition-colors duration-200"
+    class="flex h-full overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200"
   >
     <aside
-      class="w-64 flex-shrink-0 flex-col bg-medium p-4 hidden md:flex border-r border-light"
+      id="sidebar"
+      class="w-64 flex-shrink-0 flex-col bg-white dark:bg-gray-800 p-4 hidden md:flex border-r border-gray-200 dark:border-gray-700 transition-all duration-300 relative"
     >
-      <header class="mb-4">
+      <button
+        id="sidebar-toggle"
+        class="absolute -right-3 top-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full p-1 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 shadow-sm z-10 focus:outline-none"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+      </button>
+
+      <header class="mb-4 sidebar-content">
         <button
           id="sidebar-create-button"
-          class="flex w-full items-center justify-center rounded-full bg-accent px-4 py-2 font-semibold text-white shadow-lg hover:bg-accent-hover transition-all"
-          style="display: none"
+          class="flex w-full items-center justify-center rounded-full bg-indigo-600 px-4 py-2 font-semibold text-white shadow-lg hover:bg-indigo-700 transition-all overflow-hidden whitespace-nowrap"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            class="mr-2 h-5 w-5"
+            class="mr-2 h-5 w-5 flex-shrink-0"
           >
             <path
               d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"
             />
           </svg>
-          Lançar Pedido
+          <span class="sidebar-text">Lançar Pedido</span>
         </button>
       </header>
 
-      <nav class="flex-1 space-y-2 overflow-y-auto">
+      <nav
+        class="flex-1 space-y-2 overflow-y-auto sidebar-content scrollbar-thin"
+      >
         <a
           href="#"
-          class="flex items-center rounded-r-full bg-light p-2 text-blue-300"
+          class="flex items-center rounded-r-full bg-indigo-50 dark:bg-gray-700 p-2 text-indigo-600 dark:text-blue-300 font-medium whitespace-nowrap overflow-hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            class="mr-3 h-5 w-5"
+            class="mr-3 h-5 w-5 flex-shrink-0"
           >
             <path
               d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65Z"
@@ -61,26 +83,26 @@
               d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 1 10 6H4.75A.25.25 0 0 0 4.5 6.25v10.5c0 .138.112.25.25.25h10.5A.25.25 0 0 0 15.5 17V8.75a.75.75 0 0 1 1.5 0V17A1.75 1.75 0 0 1 15.25 18.75H4.75A1.75 1.75 0 0 1 3 17V5.75Z"
             />
           </svg>
-          Todos os pedidos
+          <span class="sidebar-text">Todos os pedidos</span>
         </a>
 
-        <div class="h-px bg-light my-2"></div>
+        <div class="h-px bg-gray-200 dark:bg-gray-700 my-2"></div>
 
         <div
-          class="px-2 pt-4 text-xs font-semibold uppercase text-text-secondary"
+          class="px-2 pt-4 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 sidebar-text truncate"
         >
-          Filas do Kanban
+          Filas (Visibilidade)
         </div>
 
         <ul class="space-y-1" id="sidebar-lists"></ul>
 
         <button
           id="sidebar-new-column-button"
-          class="w-full flex items-center p-2 mt-2 text-sm text-accent hover:text-accent-hover rounded-md transition-colors group"
+          class="w-full flex items-center p-2 mt-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors group whitespace-nowrap overflow-hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4 mr-2"
+            class="h-4 w-4 mr-2 flex-shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -92,24 +114,43 @@
               d="M12 4v16m8-8H4"
             />
           </svg>
-          Nova Fila
+          <span class="sidebar-text">Nova Fila</span>
         </button>
       </nav>
 
       <div
-        class="mt-auto p-2 space-y-1"
+        class="mt-auto p-2 space-y-1 sidebar-content"
         id="admin-panel-links"
         style="display: none"
       >
         <a
-          href="admin.html"
-          class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md transition-colors"
+          href="portal.html"
+          class="flex items-center p-2 text-sm text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-gray-700 rounded-md transition-colors whitespace-nowrap overflow-hidden font-medium mb-2 border border-indigo-100 dark:border-gray-600"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            class="mr-3 h-5 w-5"
+            class="mr-3 h-5 w-5 flex-shrink-0"
+          >
+            <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+            <path
+              fill-rule="evenodd"
+              d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <span class="sidebar-text">Ir para Portal</span>
+        </a>
+        <a
+          href="admin.html"
+          class="flex items-center p-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors whitespace-nowrap overflow-hidden"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="mr-3 h-5 w-5 flex-shrink-0"
           >
             <path
               fill-rule="evenodd"
@@ -117,17 +158,17 @@
               clip-rule="evenodd"
             />
           </svg>
-          Administração
+          <span class="sidebar-text">Administração</span>
         </a>
         <a
           href="settings.html"
-          class="flex items-center p-2 text-sm text-text-secondary hover:bg-light rounded-md transition-colors"
+          class="flex items-center p-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors whitespace-nowrap overflow-hidden"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            class="mr-3 h-5 w-5"
+            class="mr-3 h-5 w-5 flex-shrink-0"
           >
             <path
               fill-rule="evenodd"
@@ -135,16 +176,18 @@
               clip-rule="evenodd"
             />
           </svg>
-          Configurações
+          <span class="sidebar-text">Configurações</span>
         </a>
       </div>
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden">
       <header
-        class="flex h-16 flex-shrink-0 items-center justify-between border-b border-light bg-dark px-4 md:px-6 transition-colors duration-200"
+        class="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 md:px-6 transition-colors duration-200"
       >
-        <button class="md:hidden text-text-secondary">
+        <button
+          class="md:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -161,14 +204,42 @@
           </svg>
         </button>
         <div class="flex items-center">
-          <h1 id="main-title" class="text-xl font-semibold text-text-primary">
+          <h1
+            id="main-title"
+            class="text-xl font-semibold text-gray-800 dark:text-gray-100"
+          >
             Gestão de Compras
           </h1>
         </div>
-        <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3 md:space-x-4">
+          <button
+            id="inbox-button"
+            class="relative text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none hidden transition-colors"
+            title="Caixa de Entrada"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+              class="w-6 h-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M2.25 13.5h3.86a2.25 2.25 0 012.012 1.244l.256.512a2.25 2.25 0 002.013 1.244h3.218a2.25 2.25 0 002.013-1.244l.256-.512a2.25 2.25 0 012.013-1.244h3.859M12 3v8.25m0 0l-3-3m3 3l3-3"
+              />
+            </svg>
+            <span
+              id="inbox-badge"
+              class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-pulse"
+              >0</span
+            >
+          </button>
           <button
             id="theme-toggle"
-            class="text-text-secondary hover:text-text-primary focus:outline-none"
+            class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none"
           >
             <svg
               id="theme-toggle-light-icon"
@@ -201,7 +272,7 @@
           </button>
           <button
             id="logout-button"
-            class="text-text-secondary hover:text-text-primary"
+            class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
             title="Sair"
           >
             <svg
@@ -221,7 +292,7 @@
           </button>
           <div
             id="user-avatar"
-            class="h-8 w-8 rounded-full bg-accent flex items-center justify-center text-sm font-semibold text-white"
+            class="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-sm font-semibold text-white"
           >
             A
           </div>
@@ -229,7 +300,7 @@
       </header>
 
       <div
-        class="flex-1 overflow-x-auto p-4 md:p-6 bg-dark transition-colors duration-200"
+        class="flex-1 overflow-x-auto p-4 md:p-6 bg-gray-100 dark:bg-gray-900 transition-colors duration-200"
       >
         <div
           class="flex h-full min-h-0 space-x-4"
@@ -240,125 +311,18 @@
 
     <div
       id="create-pedido-modal"
-      class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-75"
+      class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
     >
       <div
-        class="w-full max-w-lg bg-medium rounded-lg shadow-xl p-6 border border-light"
+        class="w-full max-w-lg bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-200 dark:border-gray-700"
       >
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-semibold text-text-primary">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Lançar Novo Pedido
           </h2>
           <button
             id="create-modal-close-button"
-            class="text-text-secondary hover:text-text-primary"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              class="h-6 w-6"
-            >
-              <path
-                d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"
-              />
-            </svg>
-          </button>
-        </div>
-        <form id="create-pedido-form" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-text-secondary"
-              >Título</label
-            ><input
-              type="text"
-              id="create-pedido-title"
-              required
-              class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-text-secondary"
-              >Solicitante</label
-            ><input
-              type="text"
-              id="create-pedido-solicitante"
-              required
-              class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
-            />
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-text-secondary"
-                >Prioridade</label
-              ><select
-                id="create-pedido-priority"
-                class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
-              >
-                <option value="baixa">Baixa</option>
-                <option value="media">Média</option>
-                <option value="alta">Alta</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-text-secondary"
-                >Grupo</label
-              ><select
-                id="create-pedido-group"
-                required
-                class="mt-1 w-full rounded-md border-0 bg-light py-2 px-3 text-text-primary focus:ring-2 focus:ring-accent"
-              >
-                <option value="">Carregando...</option>
-              </select>
-            </div>
-          </div>
-          <div
-            id="create-pedido-error"
-            class="text-sm text-red-400"
-            style="display: none"
-          ></div>
-          <div class="pt-4 flex justify-end space-x-3">
-            <button
-              type="button"
-              id="create-modal-cancel-button"
-              class="rounded-md bg-light px-4 py-2 text-sm font-medium text-text-primary hover:bg-gray-600"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
-            >
-              Lançar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div
-      id="column-detail-modal"
-      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
-    >
-      <div
-        class="flex flex-col w-full max-w-4xl h-full md:h-[90vh] bg-medium rounded-lg shadow-xl overflow-hidden border border-light"
-      >
-        <div
-          class="flex items-center justify-between p-4 border-b border-light bg-dark/50"
-        >
-          <div>
-            <h2
-              id="col-modal-title"
-              class="text-xl font-bold text-text-primary"
-            >
-              Detalhes da Fila
-            </h2>
-            <p class="text-xs text-text-secondary">
-              Gerencie esta fila e visualize seus pedidos.
-            </p>
-          </div>
-          <button
-            id="col-modal-close-button"
-            class="text-text-secondary hover:text-text-primary"
+            class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -376,31 +340,287 @@
             </svg>
           </button>
         </div>
+        <form id="create-pedido-form" class="space-y-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Título</label
+            ><input
+              type="text"
+              id="create-pedido-title"
+              required
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Descrição</label
+            ><textarea
+              id="create-pedido-description"
+              rows="3"
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              placeholder="Especificações, links..."
+            ></textarea>
+          </div>
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Solicitante</label
+            ><input
+              type="text"
+              id="create-pedido-solicitante"
+              required
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >Prioridade</label
+              ><select
+                id="create-pedido-priority"
+                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white"
+              >
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >Grupo</label
+              ><select
+                id="create-pedido-group"
+                required
+                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white"
+              >
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+          </div>
+          <div
+            id="create-pedido-error"
+            class="text-sm text-red-500"
+            style="display: none"
+          ></div>
+          <div class="pt-4 flex justify-end space-x-3">
+            <button
+              type="button"
+              id="create-modal-cancel-button"
+              class="rounded-md bg-gray-200 dark:bg-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              Lançar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
+    <div
+      id="create-column-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 border border-gray-200 dark:border-gray-700"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            Nova Fila
+          </h2>
+          <button
+            id="create-col-close-btn"
+            class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <form id="create-column-form" class="space-y-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >Nome da Fila</label
+            ><input
+              type="text"
+              id="create-col-title"
+              required
+              class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >Cor</label
+              ><select
+                id="create-col-color"
+                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white"
+              >
+                <option value="gray">Cinza</option>
+                <option value="blue">Azul</option>
+                <option value="yellow">Amarelo</option>
+                <option value="red">Vermelho</option>
+                <option value="green">Verde</option>
+                <option value="purple">Roxo</option>
+                <option value="pink">Rosa</option>
+              </select>
+            </div>
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >Ordem</label
+              ><input
+                type="number"
+                id="create-col-pos"
+                value="99"
+                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 py-2 px-3 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="create-col-initial"
+                class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+              /><label
+                for="create-col-initial"
+                class="text-sm text-gray-700 dark:text-gray-300"
+                >Fila Inicial (Novos Pedidos)</label
+              >
+            </div>
+            <div class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="create-col-complete"
+                class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+              /><label
+                for="create-col-complete"
+                class="text-sm text-gray-700 dark:text-gray-300"
+                >Permite Coletar Dados de Compra</label
+              >
+            </div>
+            <div class="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="create-col-final"
+                class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+              /><label
+                for="create-col-final"
+                class="text-sm text-gray-700 dark:text-gray-300"
+                >Destino Final (Bloqueia Edição)</label
+              >
+            </div>
+          </div>
+          <div class="pt-4 flex justify-end space-x-3">
+            <button
+              type="button"
+              id="create-col-cancel-btn"
+              class="rounded-md bg-gray-200 dark:bg-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+            >
+              Criar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="column-detail-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="flex flex-col w-full max-w-4xl h-full md:h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700"
+      >
+        <div
+          class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+        >
+          <div>
+            <h2
+              id="col-modal-title"
+              class="text-xl font-bold text-gray-900 dark:text-gray-100"
+            >
+              Detalhes da Fila
+            </h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Gerencie esta fila e visualize seus pedidos.
+            </p>
+          </div>
+          <button
+            id="col-modal-close-button"
+            class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
         <div class="flex flex-1 overflow-hidden">
           <div
-            class="w-1/3 border-r border-light p-4 space-y-6 overflow-y-auto bg-dark/20"
+            class="w-1/3 border-r border-gray-200 dark:border-gray-700 p-4 space-y-6 overflow-y-auto bg-gray-50 dark:bg-gray-900"
           >
-            <h3 class="text-sm font-bold text-text-secondary uppercase">
+            <h3
+              class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase"
+            >
               Configurações
             </h3>
             <form id="col-edit-form" class="space-y-4">
               <input type="hidden" id="col-edit-id" />
               <div>
-                <label class="text-xs text-text-secondary">Nome da Fila</label
+                <label class="text-xs text-gray-500 dark:text-gray-400"
+                  >Nome</label
                 ><input
                   type="text"
                   id="col-edit-title"
                   required
-                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                  class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
                 />
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="text-xs text-text-secondary">Cor</label
+                  <label class="text-xs text-gray-500 dark:text-gray-400"
+                    >Cor</label
                   ><select
                     id="col-edit-color"
-                    class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                    class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
                   >
                     <option value="gray">Cinza</option>
                     <option value="blue">Azul</option>
@@ -412,55 +632,70 @@
                   </select>
                 </div>
                 <div>
-                  <label class="text-xs text-text-secondary">Ordem</label
+                  <label class="text-xs text-gray-500 dark:text-gray-400"
+                    >Ordem</label
                   ><input
                     type="number"
                     id="col-edit-position"
-                    class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                    class="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
-              <div class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="col-edit-initial"
-                  class="rounded border-light bg-light text-accent focus:ring-accent"
-                /><label
-                  for="col-edit-initial"
-                  class="text-sm text-text-primary"
-                  >Fila Inicial</label
-                >
-              </div>
-              <div class="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="col-edit-complete"
-                  class="rounded border-light bg-light text-accent focus:ring-accent"
-                /><label
-                  for="col-edit-complete"
-                  class="text-sm text-text-primary"
-                  >Permite Finalizar</label
-                >
+              <div class="space-y-2">
+                <div class="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="col-edit-initial"
+                    class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+                  /><label
+                    for="col-edit-initial"
+                    class="text-sm text-gray-900 dark:text-gray-100"
+                    >Fila Inicial</label
+                  >
+                </div>
+                <div class="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="col-edit-complete"
+                    class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+                  /><label
+                    for="col-edit-complete"
+                    class="text-sm text-gray-900 dark:text-gray-100"
+                    >Permite Finalizar</label
+                  >
+                </div>
+                <div class="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="col-edit-final"
+                    class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+                  /><label
+                    for="col-edit-final"
+                    class="text-sm text-gray-900 dark:text-gray-100"
+                    >Destino Final</label
+                  >
+                </div>
               </div>
               <button
                 type="submit"
-                class="w-full bg-accent hover:bg-accent-hover text-white py-2 rounded text-sm font-semibold"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded text-sm font-semibold transition-colors"
               >
                 Salvar Alterações
               </button>
             </form>
-            <div class="pt-4 border-t border-light">
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
               <button
                 id="col-delete-btn"
-                class="w-full text-red-400 hover:text-red-300 text-xs border border-red-900/50 rounded py-2"
+                class="w-full text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 text-xs border border-red-200 dark:border-red-900/50 rounded py-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 Excluir Esta Fila
               </button>
             </div>
           </div>
-
-          <div class="flex-1 p-4 overflow-y-auto bg-medium">
-            <h3 class="text-sm font-bold text-text-secondary uppercase mb-4">
+          <div class="flex-1 p-4 overflow-y-auto bg-white dark:bg-gray-800">
+            <h3
+              class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase mb-4"
+            >
               Pedidos nesta Fila
             </h3>
             <div id="col-pedidos-list" class="space-y-2"></div>
@@ -471,27 +706,27 @@
 
     <div
       id="pedido-modal"
-      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
     >
       <div
-        class="flex flex-col w-full max-w-2xl h-full md:h-auto md:max-h-[80vh] bg-medium rounded-lg shadow-xl overflow-hidden border border-light"
+        class="flex flex-col w-full max-w-2xl h-full md:h-auto md:max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700 transition-all"
       >
         <div
-          class="flex items-center justify-between p-4 border-b border-light"
+          class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700"
         >
-          <h2 class="text-xl font-semibold text-text-primary">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
             Detalhes do Pedido
           </h2>
           <div class="flex items-center space-x-2">
             <button
               id="modal-save-changes-btn"
-              class="bg-accent hover:bg-accent-hover text-white text-xs px-3 py-1 rounded transition-colors"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1 rounded transition-colors"
             >
               Salvar Edição
             </button>
             <button
               id="modal-delete-button"
-              class="text-red-400 hover:text-red-500 p-1"
+              class="text-red-400 hover:text-red-600 p-1"
               title="Excluir"
             >
               <svg
@@ -509,7 +744,7 @@
             </button>
             <button
               id="modal-close-button"
-              class="text-text-secondary hover:text-text-primary"
+              class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -529,30 +764,44 @@
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        <div
+          class="flex-1 overflow-y-auto p-6 space-y-6 text-gray-900 dark:text-gray-100"
+        >
           <div class="grid grid-cols-1 gap-4">
             <div>
-              <label class="text-xs text-text-secondary">Título</label
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Título</label
               ><input
                 type="text"
                 id="modal-edit-title"
-                class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 focus:ring-1 focus:ring-indigo-500"
               />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Descrição</label
+              ><textarea
+                id="modal-edit-description"
+                rows="3"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 focus:ring-1 focus:ring-indigo-500"
+              ></textarea>
             </div>
             <div class="grid grid-cols-3 gap-4">
               <div>
-                <label class="text-xs text-text-secondary">Solicitante</label
+                <label class="text-xs text-gray-500 dark:text-gray-400"
+                  >Solicitante</label
                 ><input
                   type="text"
                   id="modal-edit-solicitante"
-                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                  class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2"
                 />
               </div>
               <div>
-                <label class="text-xs text-text-secondary">Prioridade</label
+                <label class="text-xs text-gray-500 dark:text-gray-400"
+                  >Prioridade</label
                 ><select
                   id="modal-edit-priority"
-                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                  class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2"
                 >
                   <option value="baixa">Baixa</option>
                   <option value="media">Média</option>
@@ -560,32 +809,39 @@
                 </select>
               </div>
               <div>
-                <label class="text-xs text-text-secondary">Grupo</label
+                <label class="text-xs text-gray-500 dark:text-gray-400"
+                  >Grupo</label
                 ><select
                   id="modal-edit-group"
-                  class="w-full bg-light border-0 rounded p-2 text-text-primary"
+                  class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2"
                 ></select>
               </div>
             </div>
           </div>
 
-          <div class="border-b border-light">
+          <div class="border-b border-gray-200 dark:border-gray-700">
             <nav class="flex space-x-4 -mb-px" id="modal-tabs">
               <button
                 data-tab="tab-notes"
-                class="modal-tab-button border-accent text-accent py-2 border-b-2 font-medium text-sm"
+                class="modal-tab-button border-indigo-600 text-indigo-600 dark:text-indigo-400 py-2 border-b-2 font-medium text-sm focus:outline-none"
               >
                 Notas
               </button>
               <button
+                data-tab="tab-chat"
+                class="modal-tab-button border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 py-2 border-b-2 font-medium text-sm focus:outline-none"
+              >
+                Chat & Arq.
+              </button>
+              <button
                 data-tab="tab-research"
-                class="modal-tab-button border-transparent text-text-secondary hover:text-text-primary py-2 border-b-2 font-medium text-sm"
+                class="modal-tab-button border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 py-2 border-b-2 font-medium text-sm focus:outline-none"
               >
                 Pesquisa
               </button>
               <button
                 data-tab="tab-finalize"
-                class="modal-tab-button border-transparent text-text-secondary hover:text-text-primary py-2 border-b-2 font-medium text-sm"
+                class="modal-tab-button border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 py-2 border-b-2 font-medium text-sm focus:outline-none"
               >
                 Finalizar
               </button>
@@ -598,12 +854,12 @@
                 <textarea
                   id="modal-new-note"
                   rows="2"
-                  class="w-full rounded-md border-0 bg-light p-2 text-text-primary focus:ring-2 focus:ring-accent"
+                  class="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 focus:ring-1 focus:ring-indigo-500"
                   placeholder="Escreva uma nota..."
                 ></textarea
                 ><button
                   type="submit"
-                  class="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
+                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700"
                 >
                   Salvar
                 </button>
@@ -613,16 +869,74 @@
                 class="space-y-3 max-h-60 overflow-y-auto"
               ></ul>
             </div>
+
+            <div id="tab-chat" class="modal-tab-pane hidden space-y-6">
+              <div>
+                <h4
+                  class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2"
+                >
+                  Anexos
+                </h4>
+                <ul
+                  id="modal-attachments-list"
+                  class="space-y-2 mb-3 text-sm"
+                ></ul>
+                <form id="modal-upload-form" class="flex gap-2 items-center">
+                  <input
+                    type="file"
+                    id="modal-upload-file"
+                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-gray-700 dark:file:text-gray-200"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700"
+                  >
+                    Enviar
+                  </button>
+                </form>
+              </div>
+
+              <hr class="border-gray-200 dark:border-gray-700" />
+
+              <div class="flex flex-col h-80">
+                <h4
+                  class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2"
+                >
+                  Comentários
+                </h4>
+                <div
+                  id="modal-chat-list"
+                  class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-md p-4 space-y-3 mb-3 border border-gray-200 dark:border-gray-700"
+                ></div>
+                <form id="modal-chat-form" class="flex gap-2">
+                  <input
+                    type="text"
+                    id="modal-chat-input"
+                    class="flex-1 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Digite uma mensagem..."
+                    required
+                  />
+                  <button
+                    type="submit"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700"
+                  >
+                    Enviar
+                  </button>
+                </form>
+              </div>
+            </div>
+
             <div id="tab-research" class="modal-tab-pane hidden space-y-4">
               <form id="modal-add-research-form" class="space-y-2">
                 <input
                   type="text"
                   id="modal-new-research"
-                  class="w-full rounded-md border-0 bg-light p-2 text-text-primary focus:ring-2 focus:ring-accent"
+                  class="w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-2 focus:ring-1 focus:ring-indigo-500"
                   placeholder="Link ou info..."
                 /><button
                   type="submit"
-                  class="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:bg-accent-hover"
+                  class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700"
                 >
                   Salvar
                 </button>
@@ -635,70 +949,81 @@
             <div id="tab-finalize" class="modal-tab-pane hidden space-y-4">
               <div
                 id="modal-finalize-error"
-                class="hidden rounded-md bg-yellow-900/50 border border-yellow-700 p-3 text-sm text-yellow-200"
+                class="hidden rounded-md bg-yellow-100 dark:bg-yellow-900/50 border border-yellow-300 dark:border-yellow-700 p-3 text-sm text-yellow-800 dark:text-yellow-200"
               >
-                <p>Para finalizar, mova o pedido para a coluna correta.</p>
+                <p>
+                  Para finalizar, mova o pedido para uma coluna que permita
+                  finalização.
+                </p>
               </div>
               <form id="modal-finalize-form" class="space-y-3">
                 <div>
-                  <label class="text-sm text-text-secondary">Link Compra</label
+                  <label class="text-sm text-gray-500 dark:text-gray-400"
+                    >Link Compra</label
                   ><input
                     type="text"
                     id="modal-link"
                     required
-                    class="w-full rounded-md bg-light p-2 text-text-primary focus:ring-2 focus:ring-accent"
+                    class="w-full rounded-md bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 p-2 focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                   <div>
-                    <label class="text-sm text-text-secondary">Preço</label
+                    <label class="text-sm text-gray-500 dark:text-gray-400"
+                      >Preço</label
                     ><input
                       type="number"
                       step="0.01"
                       id="modal-price"
                       required
-                      class="w-full bg-light rounded-md p-2 text-text-primary"
+                      class="w-full rounded-md bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 p-2 focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
                   <div>
-                    <label class="text-sm text-text-secondary">Qtd</label
+                    <label class="text-sm text-gray-500 dark:text-gray-400"
+                      >Qtd</label
                     ><input
                       type="number"
                       id="modal-quantity"
                       required
-                      class="w-full bg-light rounded-md p-2 text-text-primary"
+                      class="w-full rounded-md bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 p-2 focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
                 <button
                   type="submit"
-                  class="w-full rounded-md bg-accent px-3 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
+                  class="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
                 >
-                  Salvar Dados
+                  Salvar Dados da Compra
                 </button>
               </form>
               <div
                 id="modal-finalize-success"
-                class="hidden space-y-3 pt-2 border-t border-light"
+                class="hidden space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700"
               >
                 <div
-                  class="bg-green-900/30 p-3 rounded text-center text-green-300 text-sm"
+                  class="bg-green-100 dark:bg-green-900/30 p-3 rounded text-center text-green-800 dark:text-green-300 text-sm"
                 >
-                  Dados salvos!
+                  Dados de compra salvos!
                 </div>
-                <div id="modal-finalize-actions" class="flex space-x-2">
-                  <button
-                    id="modal-report-button"
-                    type="button"
-                    class="flex-1 rounded-md bg-light px-3 py-2 text-sm font-semibold text-text-primary hover:bg-gray-600"
-                  >
-                    Ver Relatório</button
-                  ><button
-                    id="modal-deliver-button"
-                    class="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-500"
-                  >
-                    Entregar Pedido
-                  </button>
+                <div id="modal-finalize-actions">
+                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    Ações Finais:
+                  </p>
+                  <div class="flex space-x-2">
+                    <button
+                      id="modal-report-button"
+                      type="button"
+                      class="flex-1 rounded-md bg-gray-200 dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    >
+                      Ver Relatório</button
+                    ><button
+                      id="modal-deliver-button"
+                      class="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                    >
+                      Entregar Pedido
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -708,18 +1033,131 @@
     </div>
 
     <div
+      id="triage-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="flex flex-col w-full max-w-4xl h-full md:h-[85vh] bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700"
+      >
+        <div
+          class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-indigo-600"
+        >
+          <div class="flex items-center gap-4">
+            <h2 class="text-lg font-bold text-white">Caixa de Entrada</h2>
+            <div class="flex space-x-1 bg-indigo-700 rounded-lg p-1">
+              <button
+                id="triage-tab-pending"
+                class="px-3 py-1 text-xs font-bold rounded-md bg-white text-indigo-700 shadow-sm transition-all"
+              >
+                Pendentes
+              </button>
+              <button
+                id="triage-tab-rejected"
+                class="px-3 py-1 text-xs font-bold rounded-md text-indigo-200 hover:text-white hover:bg-indigo-600 transition-all"
+              >
+                Rejeitados
+              </button>
+            </div>
+          </div>
+          <button
+            id="triage-close-button"
+            class="text-indigo-200 hover:text-white"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="flex flex-1 overflow-hidden">
+          <div
+            class="w-1/3 border-r border-gray-200 dark:border-gray-700 overflow-y-auto bg-gray-50 dark:bg-gray-900"
+            id="triage-list"
+          ></div>
+          <div
+            class="w-2/3 p-6 overflow-y-auto bg-white dark:bg-gray-800 relative"
+            id="triage-details"
+          >
+            <div
+              class="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-16 w-16 mb-4 opacity-50"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                />
+              </svg>
+              <p>Selecione um item para visualizar.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="toast-notification"
+      class="hidden fixed bottom-6 right-6 z-[100] animate-[slideIn_0.3s_ease-out]"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 border-l-4 border-indigo-600 shadow-xl rounded-r-lg p-4 flex items-start gap-3 max-w-sm"
+      >
+        <div class="text-indigo-600 dark:text-indigo-400 mt-0.5">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+            />
+          </svg>
+        </div>
+        <div>
+          <h4 class="text-sm font-bold text-gray-900 dark:text-white">
+            Nova Solicitação
+          </h4>
+          <p
+            class="text-sm text-gray-600 dark:text-gray-300 mt-1"
+            id="toast-msg"
+          >
+            Você recebeu um novo pedido.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div
       id="custom-alert-modal"
       class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm transition-opacity"
     >
       <div
-        class="bg-medium p-6 rounded-lg shadow-2xl border border-light max-w-sm w-full text-center transform transition-all scale-100"
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-w-sm w-full text-center transform transition-all scale-100"
       >
         <div
-          class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-accent/20 mb-4"
+          class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900 mb-4"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6 text-accent"
+            class="h-6 w-6 text-indigo-600 dark:text-indigo-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -733,40 +1171,42 @@
           </svg>
         </div>
         <h3
-          class="text-lg leading-6 font-medium text-text-primary"
+          class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
           id="custom-alert-title"
         >
           Atenção
         </h3>
         <div class="mt-2">
-          <p class="text-sm text-text-secondary" id="custom-alert-message">
-            Mensagem aqui.
+          <p
+            class="text-sm text-gray-500 dark:text-gray-400"
+            id="custom-alert-message"
+          >
+            Mensagem.
           </p>
         </div>
         <div class="mt-5">
           <button
             id="custom-alert-ok"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-accent text-base font-medium text-white hover:bg-accent-hover sm:text-sm"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:text-sm"
           >
             OK
           </button>
         </div>
       </div>
     </div>
-
     <div
       id="custom-confirm-modal"
       class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-80 backdrop-blur-sm"
     >
       <div
-        class="bg-medium p-6 rounded-lg shadow-2xl border border-light max-w-sm w-full text-center"
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 max-w-sm w-full text-center"
       >
         <div
-          class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-500/20 mb-4"
+          class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900 mb-4"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-6 w-6 text-yellow-500"
+            class="h-6 w-6 text-yellow-600 dark:text-yellow-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -780,26 +1220,28 @@
           </svg>
         </div>
         <h3
-          class="text-lg leading-6 font-medium text-text-primary"
+          class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
           id="custom-confirm-title"
         >
-          Confirmar Ação
+          Confirmar
         </h3>
         <div class="mt-2">
-          <p class="text-sm text-text-secondary" id="custom-confirm-message">
-            Tem certeza?
+          <p
+            class="text-sm text-gray-500 dark:text-gray-400"
+            id="custom-confirm-message"
+          >
+            Certeza?
           </p>
         </div>
         <div class="mt-5 flex space-x-3">
           <button
             id="custom-confirm-cancel"
-            class="flex-1 inline-flex justify-center rounded-md border border-light shadow-sm px-4 py-2 bg-transparent text-base font-medium text-text-secondary hover:text-text-primary sm:text-sm"
+            class="flex-1 inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-transparent text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 sm:text-sm"
           >
-            Cancelar
-          </button>
-          <button
+            Cancelar</button
+          ><button
             id="custom-confirm-ok"
-            class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-accent text-base font-medium text-white hover:bg-accent-hover sm:text-sm"
+            class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:text-sm"
           >
             Confirmar
           </button>

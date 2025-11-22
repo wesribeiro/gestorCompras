@@ -4,72 +4,70 @@ const {
   isAuthenticated,
   isBuyerOrAdmin,
 } = require("../middleware/authMiddleware");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
-// 1. DECLARAÇÃO DO ROUTER (Deve vir antes das rotas)
 const router = express.Router();
+
+// --- CONFIGURAÇÃO DO MULTER (UPLOADS) ---
+// Define onde os arquivos serão salvos e com que nome
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Certifique-se de que a pasta 'src/public/uploads' existe!
+    cb(null, "src/public/uploads/");
+  },
+  filename: function (req, file, cb) {
+    // Adiciona timestamp para evitar nomes duplicados
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 // Aplica segurança em todas as rotas
 router.use(isAuthenticated);
 
 // -----------------------------------------------------------------
-// 2. LISTAGEM E CRIAÇÃO (KANBAN)
+// 1. LISTAGEM E CRIAÇÃO (KANBAN)
 // -----------------------------------------------------------------
 
-/**
- * Rota: GET /api/pedidos
- * Objetivo: Buscar todos os pedidos ATIVOS para o Kanban.
- */
 router.get("/", (req, res) => {
   const sql = `
         SELECT 
-            kp.id, 
-            kp.title, 
-            kp.column_id, 
-            kp.priority,
-            kp.task_created_at,
-            kp.purchase_link,
-            kp.solicitante_name,
-            kp.purchased_price,
-            kp.purchased_quantity,
-            kp.report_generated_at,
-            
+            kp.*, 
             kc.title as column_title,
             kc.color as column_color,
             kc.allows_completion,
-            
-            kp.group_id,
             g.name as group_name,
-            
+            u_creator.username as creator_name,
+            u_requester.username as requester_user,
             COALESCE(kp.solicitante_name, u_requester.username, u_creator.username) as solicitante_display,
-
-            -- Subquery para pegar a última nota
-            (SELECT content FROM PedidoNotes WHERE pedido_id = kp.id ORDER BY created_at DESC LIMIT 1) as last_note
-            
+            CASE WHEN kp.request_id IS NOT NULL THEN 1 ELSE 0 END as is_from_portal,
+            (SELECT content FROM PedidoNotes WHERE pedido_id = kp.id ORDER BY created_at DESC LIMIT 1) as last_note,
+            -- Contadores para a UI
+            (SELECT count(*) FROM PedidoComments WHERE pedido_id = kp.id) as comments_count,
+            (SELECT count(*) FROM PedidoAttachments WHERE pedido_id = kp.id) as attachments_count
         FROM KanbanPedidos kp
         LEFT JOIN KanbanColumns kc ON kp.column_id = kc.id
         LEFT JOIN Groups g ON kp.group_id = g.id
         LEFT JOIN Users u_creator ON kp.created_by_user_id = u_creator.id
         LEFT JOIN PurchaseRequests pr ON kp.request_id = pr.id
         LEFT JOIN Users u_requester ON pr.requester_id = u_requester.id
-        
-        WHERE kp.lifecycle_status = 'active' -- Apenas pedidos ativos no Kanban
+        WHERE kp.lifecycle_status = 'active'
         ORDER BY kp.task_created_at DESC
     `;
 
   db.all(sql, [], (err, rows) => {
-    if (err) {
-      console.error("Erro ao buscar pedidos:", err.message);
-      return res.status(500).json({ message: "Erro interno do servidor." });
-    }
+    if (err)
+      return res.status(500).json({ message: "Erro ao buscar pedidos." });
     res.json(rows);
   });
 });
 
-/**
- * Rota: POST /api/pedidos/create
- */
 router.post("/create", (req, res) => {
-  const { title, group_id, priority, solicitante_name } = req.body;
+  const { title, description, group_id, priority, solicitante_name } = req.body;
   const userId = req.session.user.id;
 
   if (!title || !group_id) {
@@ -79,26 +77,25 @@ router.post("/create", (req, res) => {
   }
 
   db.serialize(() => {
-    // Busca a coluna inicial dinamicamente
     db.get(
       "SELECT id FROM KanbanColumns WHERE is_initial = 1 LIMIT 1",
       [],
       (err, col) => {
-        if (err || !col) {
-          return res
-            .status(500)
-            .json({ message: "Erro: Nenhuma coluna inicial configurada." });
-        }
+        if (err || !col)
+          return res.status(500).json({ message: "Erro: Sem coluna inicial." });
 
         const insertSql = `
-                INSERT INTO KanbanPedidos (title, column_id, group_id, priority, solicitante_name, created_by_user_id, lifecycle_status)
-                VALUES (?, ?, ?, ?, ?, ?, 'active')
+                INSERT INTO KanbanPedidos (
+                    title, description, column_id, group_id, priority, 
+                    solicitante_name, created_by_user_id, lifecycle_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
             `;
 
         db.run(
           insertSql,
           [
             title,
+            description || "",
             col.id,
             group_id,
             priority || "baixa",
@@ -109,13 +106,13 @@ router.post("/create", (req, res) => {
             if (err)
               return res.status(500).json({ message: "Erro ao criar pedido." });
 
-            const newPedidoId = this.lastID;
+            const newId = this.lastID;
             db.run(
               `INSERT INTO AuditLog (user_id, action, target_type, target_id) VALUES (?, ?, 'Pedido', ?)`,
-              [userId, `Lançou pedido #${newPedidoId}`, newPedidoId]
+              [userId, `Lançou pedido manual #${newId}`, newId]
             );
 
-            res.status(201).json({ success: true, newPedidoId: newPedidoId });
+            res.status(201).json({ success: true, newPedidoId: newId });
           }
         );
       }
@@ -124,150 +121,19 @@ router.post("/create", (req, res) => {
 });
 
 // -----------------------------------------------------------------
-// 3. GESTÃO E MOVIMENTAÇÃO
-// -----------------------------------------------------------------
-
-router.put("/:id/move", (req, res) => {
-  const pedidoId = req.params.id;
-  const { newColumnId } = req.body;
-  const userId = req.session.user.id;
-
-  if (!newColumnId)
-    return res.status(400).json({ message: "ID da coluna inválido." });
-
-  db.run(
-    `UPDATE KanbanPedidos SET column_id = ? WHERE id = ?`,
-    [newColumnId, pedidoId],
-    function (err) {
-      if (err)
-        return res.status(500).json({ message: "Erro ao mover pedido." });
-
-      // Log opcional da movimentação
-      db.get(
-        "SELECT title FROM KanbanColumns WHERE id = ?",
-        [newColumnId],
-        (err, col) => {
-          if (col) {
-            db.run(
-              `INSERT INTO AuditLog (user_id, action, target_type, target_id) VALUES (?, ?, 'Pedido', ?)`,
-              [
-                userId,
-                `Moveu pedido #${pedidoId} para '${col.title}'`,
-                pedidoId,
-              ]
-            );
-          }
-        }
-      );
-
-      res.json({ success: true });
-    }
-  );
-});
-
-router.put("/:id/finalize", (req, res) => {
-  const { id } = req.params;
-  const { purchase_link, purchased_price, purchased_quantity } = req.body;
-  const userId = req.session.user.id;
-
-  const updateSql = `
-        UPDATE KanbanPedidos 
-        SET purchase_link = ?, purchased_price = ?, purchased_quantity = ?, report_generated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-    `;
-
-  db.run(
-    updateSql,
-    [purchase_link, purchased_price, purchased_quantity, id],
-    function (err) {
-      if (err)
-        return res.status(500).json({ message: "Erro ao salvar dados." });
-
-      db.run(
-        `INSERT INTO AuditLog (user_id, action, target_type, target_id) VALUES (?, ?, 'Pedido', ?)`,
-        [userId, `Atualizou dados de compra do pedido #${id}`, id]
-      );
-
-      res.json({ success: true });
-    }
-  );
-});
-
-router.put("/:id/deliver", (req, res) => {
-  const { id } = req.params;
-  const userId = req.session.user.id;
-
-  // Marca como concluído (sai do Kanban principal, vai para Arquivo)
-  db.run(
-    `UPDATE KanbanPedidos SET lifecycle_status = 'completed' WHERE id = ?`,
-    [id],
-    function (err) {
-      if (err) return res.status(500).json({ message: "Erro ao entregar." });
-
-      db.run(
-        `INSERT INTO AuditLog (user_id, action, target_type, target_id) VALUES (?, ?, 'Pedido', ?)`,
-        [userId, `Entregou e arquivou pedido #${id}`, id]
-      );
-
-      res.json({ success: true });
-    }
-  );
-});
-
-// -----------------------------------------------------------------
-// 4. CRUD GERAL (EDITAR/EXCLUIR)
-// -----------------------------------------------------------------
-
-router.delete("/:id", isBuyerOrAdmin, (req, res) => {
-  const { id } = req.params;
-  const userId = req.session.user.id;
-
-  db.run(`DELETE FROM KanbanPedidos WHERE id = ?`, [id], function (err) {
-    if (err)
-      return res.status(500).json({ message: "Erro ao excluir pedido." });
-
-    db.run(
-      `INSERT INTO AuditLog (user_id, action, target_type, target_id) VALUES (?, ?, 'Pedido', ?)`,
-      [userId, `Excluiu pedido #${id}`, id]
-    );
-
-    res.json({ success: true });
-  });
-});
-
-router.put("/:id", isBuyerOrAdmin, (req, res) => {
-  const { id } = req.params;
-  const { title, group_id, priority, solicitante_name } = req.body;
-
-  const sql = `
-        UPDATE KanbanPedidos 
-        SET title = ?, group_id = ?, priority = ?, solicitante_name = ?
-        WHERE id = ?
-    `;
-
-  db.run(
-    sql,
-    [title, group_id, priority, solicitante_name, id],
-    function (err) {
-      if (err)
-        return res.status(500).json({ message: "Erro ao atualizar pedido." });
-      res.json({ success: true });
-    }
-  );
-});
-
-// -----------------------------------------------------------------
-// 5. DETALHES E SUB-RECURSOS
+// 2. DETALHES E GESTÃO
 // -----------------------------------------------------------------
 
 router.get("/:id", (req, res) => {
-  const { id } = req.params;
   const sql = `
         SELECT 
             kp.*, 
             kc.title as column_title,
             g.name as group_name,
-            COALESCE(kp.solicitante_name, u_requester.username, u_creator.username) as solicitante_display
+            u_creator.username as creator_name,
+            u_requester.username as requester_user,
+            COALESCE(kp.solicitante_name, u_requester.username, u_creator.username) as solicitante_display,
+            CASE WHEN kp.request_id IS NOT NULL THEN 1 ELSE 0 END as is_from_portal
         FROM KanbanPedidos kp
         LEFT JOIN KanbanColumns kc ON kp.column_id = kc.id
         LEFT JOIN Groups g ON kp.group_id = g.id
@@ -276,106 +142,259 @@ router.get("/:id", (req, res) => {
         LEFT JOIN Users u_requester ON pr.requester_id = u_requester.id
         WHERE kp.id = ?
     `;
-  db.get(sql, [id], (err, row) => {
-    if (err) return res.status(500).json({ message: "Erro interno." });
-    if (!row) return res.status(404).json({ message: "Não encontrado." });
+  db.get(sql, [req.params.id], (err, row) => {
+    if (err || !row)
+      return res.status(404).json({ message: "Não encontrado." });
     res.json(row);
   });
 });
 
-router.get("/:id/notes", (req, res) => {
-  const sql = `SELECT pn.id, pn.content, pn.created_at, u.username FROM PedidoNotes pn JOIN Users u ON pn.user_id = u.id WHERE pn.pedido_id = ? ORDER BY pn.created_at DESC`;
-  db.all(sql, [req.params.id], (err, rows) => res.json(rows || []));
+router.put("/:id/move", (req, res) => {
+  const { newColumnId } = req.body;
+  db.run(
+    `UPDATE KanbanPedidos SET column_id = ? WHERE id = ?`,
+    [newColumnId, req.params.id],
+    (err) => {
+      if (err) return res.status(500).json({ message: "Erro ao mover." });
+      res.json({ success: true });
+    }
+  );
 });
 
+router.put("/:id/finalize", (req, res) => {
+  const { purchase_link, purchased_price, purchased_quantity } = req.body;
+  const sql = `UPDATE KanbanPedidos SET purchase_link=?, purchased_price=?, purchased_quantity=?, report_generated_at=CURRENT_TIMESTAMP WHERE id=?`;
+  db.run(
+    sql,
+    [purchase_link, purchased_price, purchased_quantity, req.params.id],
+    (err) => {
+      if (err) return res.status(500).json({ message: "Erro ao salvar." });
+      res.json({ success: true });
+    }
+  );
+});
+
+router.put("/:id/deliver", (req, res) => {
+  db.run(
+    `UPDATE KanbanPedidos SET lifecycle_status = 'completed' WHERE id = ?`,
+    [req.params.id],
+    (err) => {
+      if (err) return res.status(500).json({ message: "Erro ao entregar." });
+      res.json({ success: true });
+    }
+  );
+});
+
+router.put("/:id", isBuyerOrAdmin, (req, res) => {
+  const { title, description, group_id, priority, solicitante_name } = req.body;
+  const sql = `UPDATE KanbanPedidos SET title=?, description=?, group_id=?, priority=?, solicitante_name=? WHERE id=?`;
+  db.run(
+    sql,
+    [title, description, group_id, priority, solicitante_name, req.params.id],
+    (err) => {
+      if (err) return res.status(500).json({ message: "Erro ao atualizar." });
+      res.json({ success: true });
+    }
+  );
+});
+
+router.delete("/:id", isBuyerOrAdmin, (req, res) => {
+  db.run(`DELETE FROM KanbanPedidos WHERE id = ?`, [req.params.id], (err) => {
+    if (err) return res.status(500).json({ message: "Erro ao excluir." });
+    res.json({ success: true });
+  });
+});
+
+// -----------------------------------------------------------------
+// 3. SUB-RECURSOS EXISTENTES (Notas, Links)
+// -----------------------------------------------------------------
+
+router.get("/:id/notes", (req, res) => {
+  db.all(
+    `SELECT pn.id, pn.content, pn.created_at, u.username FROM PedidoNotes pn JOIN Users u ON pn.user_id = u.id WHERE pn.pedido_id = ? ORDER BY pn.created_at DESC`,
+    [req.params.id],
+    (err, r) => res.json(r || [])
+  );
+});
 router.post("/:id/notes", (req, res) => {
   db.run(
     `INSERT INTO PedidoNotes (pedido_id, user_id, content) VALUES (?, ?, ?)`,
     [req.params.id, req.session.user.id, req.body.content],
     function (err) {
-      if (err) return res.status(500).json({ message: "Erro ao criar nota." });
+      if (err) return res.status(500).json({ message: "Erro" });
       db.get(
-        `SELECT pn.id, pn.content, pn.created_at, u.username FROM PedidoNotes pn JOIN Users u ON pn.user_id = u.id WHERE pn.id = ?`,
+        `SELECT pn.*, u.username FROM PedidoNotes pn JOIN Users u ON pn.user_id=u.id WHERE pn.id=?`,
         [this.lastID],
-        (err, row) => res.json(row)
+        (e, r) => res.json(r)
       );
     }
   );
 });
 
 router.get("/:id/research", (req, res) => {
-  const sql = `SELECT pr.id, pr.content, pr.created_at, u.username FROM PedidoResearch pr JOIN Users u ON pr.user_id = u.id WHERE pr.pedido_id = ? ORDER BY pr.created_at DESC`;
-  db.all(sql, [req.params.id], (err, rows) => res.json(rows || []));
+  db.all(
+    `SELECT pr.id, pr.content, pr.created_at, u.username FROM PedidoResearch pr JOIN Users u ON pr.user_id = u.id WHERE pr.pedido_id = ? ORDER BY pr.created_at DESC`,
+    [req.params.id],
+    (err, r) => res.json(r || [])
+  );
 });
-
 router.post("/:id/research", (req, res) => {
   db.run(
     `INSERT INTO PedidoResearch (pedido_id, user_id, content) VALUES (?, ?, ?)`,
     [req.params.id, req.session.user.id, req.body.content],
     function (err) {
-      if (err) return res.status(500).json({ message: "Erro ao criar link." });
+      if (err) return res.status(500).json({ message: "Erro" });
       db.get(
-        `SELECT pr.id, pr.content, pr.created_at, u.username FROM PedidoResearch pr JOIN Users u ON pr.user_id = u.id WHERE pr.id = ?`,
+        `SELECT pr.*, u.username FROM PedidoResearch pr JOIN Users u ON pr.user_id=u.id WHERE pr.id=?`,
         [this.lastID],
-        (err, row) => res.json(row)
+        (e, r) => res.json(r)
       );
     }
   );
 });
 
 // -----------------------------------------------------------------
-// 6. ROTAS DE ARQUIVO (PEDIDOS FINALIZADOS)
+// 4. NOVOS SUB-RECURSOS v4.5 (CHAT E ANEXOS)
 // -----------------------------------------------------------------
 
-/**
- * Rota: GET /api/pedidos/archived/all
- * Objetivo: Listar pedidos finalizados/arquivados.
- */
-router.get("/archived/all", isBuyerOrAdmin, (req, res) => {
+// --- COMENTÁRIOS (CHAT) ---
+router.get("/:id/comments", (req, res) => {
   const sql = `
-        SELECT 
-            kp.id, kp.title, kp.task_created_at, kp.report_generated_at,
-            kc.title as column_title,
-            g.name as group_name,
-            COALESCE(kp.solicitante_name, u_requester.username, u_creator.username) as solicitante_display
-        FROM KanbanPedidos kp
-        LEFT JOIN KanbanColumns kc ON kp.column_id = kc.id
-        LEFT JOIN Groups g ON kp.group_id = g.id
-        LEFT JOIN Users u_creator ON kp.created_by_user_id = u_creator.id
-        LEFT JOIN PurchaseRequests pr ON kp.request_id = pr.id
-        LEFT JOIN Users u_requester ON pr.requester_id = u_requester.id
-        WHERE kp.lifecycle_status = 'completed'
-        ORDER BY kp.report_generated_at DESC
+        SELECT pc.id, pc.content, pc.created_at, u.username, u.role 
+        FROM PedidoComments pc 
+        JOIN Users u ON pc.user_id = u.id 
+        WHERE pc.pedido_id = ? 
+        ORDER BY pc.created_at ASC
     `;
-  db.all(sql, [], (err, rows) => {
-    if (err)
-      return res.status(500).json({ message: "Erro ao buscar arquivados." });
-    res.json(rows);
+  db.all(sql, [req.params.id], (err, rows) => {
+    if (err) return res.status(500).json({ message: "Erro ao buscar chat." });
+    res.json(rows || []);
   });
 });
 
-/**
- * Rota: PUT /api/pedidos/:id/restore
- * Objetivo: Restaurar um pedido arquivado para o Kanban.
- */
-router.put("/:id/restore", isBuyerOrAdmin, (req, res) => {
-  const { id } = req.params;
-  const userId = req.session.user.id;
+router.post("/:id/comments", (req, res) => {
+  const { content } = req.body;
+  if (!content) return res.status(400).json({ message: "Mensagem vazia." });
 
   db.run(
-    `UPDATE KanbanPedidos SET lifecycle_status = 'active' WHERE id = ?`,
-    [id],
+    `INSERT INTO PedidoComments (pedido_id, user_id, content) VALUES (?, ?, ?)`,
+    [req.params.id, req.session.user.id, content],
     function (err) {
       if (err)
-        return res.status(500).json({ message: "Erro ao restaurar pedido." });
+        return res.status(500).json({ message: "Erro ao enviar mensagem." });
 
-      db.run(
-        `INSERT INTO AuditLog (user_id, action, target_type, target_id) VALUES (?, ?, 'Pedido', ?)`,
-        [userId, `Restaurou pedido #${id} do arquivo`, id]
+      // Retorna a mensagem criada com dados do usuário para atualização em tempo real
+      db.get(
+        `SELECT pc.*, u.username, u.role FROM PedidoComments pc JOIN Users u ON pc.user_id=u.id WHERE pc.id=?`,
+        [this.lastID],
+        (e, row) => res.json(row)
       );
-
-      res.json({ success: true });
     }
+  );
+});
+
+// --- ANEXOS (UPLOADS) ---
+router.get("/:id/attachments", (req, res) => {
+  const sql = `
+        SELECT pa.id, pa.file_name, pa.file_type, pa.created_at, u.username 
+        FROM PedidoAttachments pa 
+        JOIN Users u ON pa.user_id = u.id 
+        WHERE pa.pedido_id = ? 
+        ORDER BY pa.created_at DESC
+    `;
+  db.all(sql, [req.params.id], (err, rows) => {
+    if (err) return res.status(500).json({ message: "Erro ao buscar anexos." });
+    res.json(rows || []);
+  });
+});
+
+router.post("/:id/upload", upload.single("file"), (req, res) => {
+  if (!req.file)
+    return res.status(400).json({ message: "Nenhum arquivo enviado." });
+
+  const { originalname, filename, mimetype } = req.file;
+  // O caminho relativo que será salvo no banco (ex: uploads/123-arquivo.pdf)
+  // O 'filename' gerado pelo Multer já é único.
+  const dbPath = `uploads/${filename}`;
+
+  db.run(
+    `INSERT INTO PedidoAttachments (pedido_id, user_id, file_path, file_name, file_type) VALUES (?, ?, ?, ?, ?)`,
+    [req.params.id, req.session.user.id, dbPath, originalname, mimetype],
+    function (err) {
+      if (err)
+        return res
+          .status(500)
+          .json({ message: "Erro ao salvar anexo no banco." });
+
+      db.get(
+        `SELECT pa.*, u.username FROM PedidoAttachments pa JOIN Users u ON pa.user_id=u.id WHERE pa.id=?`,
+        [this.lastID],
+        (e, row) => res.json(row)
+      );
+    }
+  );
+});
+
+router.delete("/attachments/:attachId", (req, res) => {
+  // Primeiro busca o arquivo para pegar o caminho e deletar do disco
+  db.get(
+    `SELECT file_path FROM PedidoAttachments WHERE id = ?`,
+    [req.params.attachId],
+    (err, row) => {
+      if (err || !row)
+        return res.status(404).json({ message: "Anexo não encontrado." });
+
+      const filePath = path.join(__dirname, "../../public", row.file_path);
+
+      // Deleta do banco
+      db.run(
+        `DELETE FROM PedidoAttachments WHERE id = ?`,
+        [req.params.attachId],
+        (delErr) => {
+          if (delErr)
+            return res.status(500).json({ message: "Erro ao excluir anexo." });
+
+          // Tenta deletar do disco (não falha a requisição se der erro aqui, apenas loga)
+          fs.unlink(filePath, (fsErr) => {
+            if (fsErr) console.error("Erro ao apagar arquivo físico:", fsErr);
+          });
+
+          res.json({ success: true });
+        }
+      );
+    }
+  );
+});
+
+// -----------------------------------------------------------------
+// 5. ADMIN (Busca e Restore)
+// -----------------------------------------------------------------
+
+router.post("/admin/search", isBuyerOrAdmin, (req, res) => {
+  const { term, dateStart, dateEnd } = req.body;
+  let sql = `SELECT kp.*, kc.title as column_title, g.name as group_name, COALESCE(kp.solicitante_name, u_requester.username, u_creator.username) as solicitante_display FROM KanbanPedidos kp LEFT JOIN KanbanColumns kc ON kp.column_id = kc.id LEFT JOIN Groups g ON kp.group_id = g.id LEFT JOIN Users u_creator ON kp.created_by_user_id = u_creator.id LEFT JOIN PurchaseRequests pr ON kp.request_id = pr.id LEFT JOIN Users u_requester ON pr.requester_id = u_requester.id WHERE kp.lifecycle_status = 'completed'`;
+  const params = [];
+  if (term) {
+    sql += ` AND (kp.title LIKE ? OR kp.description LIKE ? OR solicitante_display LIKE ?)`;
+    params.push(`%${term}%`, `%${term}%`, `%${term}%`);
+  }
+  if (dateStart) {
+    sql += ` AND date(kp.report_generated_at) >= date(?)`;
+    params.push(dateStart);
+  }
+  if (dateEnd) {
+    sql += ` AND date(kp.report_generated_at) <= date(?)`;
+    params.push(dateEnd);
+  }
+  sql += ` ORDER BY kp.report_generated_at DESC LIMIT 50`;
+  db.all(sql, params, (err, rows) => res.json(rows || []));
+});
+
+router.put("/:id/restore", isBuyerOrAdmin, (req, res) => {
+  db.run(
+    `UPDATE KanbanPedidos SET lifecycle_status = 'active' WHERE id = ?`,
+    [req.params.id],
+    (err) => res.json({ success: !err })
   );
 });
 

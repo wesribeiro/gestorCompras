@@ -6,13 +6,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutButton = document.getElementById("logout-button");
   const adminSettingsLink = document.getElementById("admin-settings-link");
   const adminPanelLinks = document.getElementById("admin-panel-links");
+
+  const sidebar = document.getElementById("sidebar");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
   const sidebarCreateButton = document.getElementById("sidebar-create-button");
   const sidebarNewColumnButton = document.getElementById(
     "sidebar-new-column-button"
   );
+  const sidebarLists = document.getElementById("sidebar-lists");
 
   const kanbanContainer = document.getElementById("kanban-board-container");
-  const sidebarLists = document.getElementById("sidebar-lists");
+
+  // Header & Notifications
+  const inboxButton = document.getElementById("inbox-button");
+  const inboxBadge = document.getElementById("inbox-badge");
+  const toastNotification = document.getElementById("toast-notification");
+  const toastMsg = document.getElementById("toast-msg");
 
   // Dark Mode
   const themeToggleBtn = document.getElementById("theme-toggle");
@@ -20,6 +29,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const themeToggleLightIcon = document.getElementById(
     "theme-toggle-light-icon"
   );
+
+  // --- MODAL TRIAGEM (CAIXA DE ENTRADA) ---
+  const triageModal = document.getElementById("triage-modal");
+  const triageCloseButton = document.getElementById("triage-close-button");
+  const triageList = document.getElementById("triage-list");
+  const triageDetails = document.getElementById("triage-details");
+  const triageTabPending = document.getElementById("triage-tab-pending");
+  const triageTabRejected = document.getElementById("triage-tab-rejected");
 
   // --- MODAL CRIAÇÃO PEDIDO ---
   const createModal = document.getElementById("create-pedido-modal");
@@ -31,6 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const createPedidoForm = document.getElementById("create-pedido-form");
   const createPedidoTitle = document.getElementById("create-pedido-title");
+  const createPedidoDescription = document.getElementById(
+    "create-pedido-description"
+  );
   const createPedidoGroup = document.getElementById("create-pedido-group");
   const createPedidoPriority = document.getElementById(
     "create-pedido-priority"
@@ -40,18 +60,33 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const createPedidoError = document.getElementById("create-pedido-error");
 
+  // --- MODAL CRIAÇÃO FILA (NOVO) ---
+  const createColModal = document.getElementById("create-column-modal");
+  const createColCloseBtn = document.getElementById("create-col-close-btn");
+  const createColCancelBtn = document.getElementById("create-col-cancel-btn");
+  const createColForm = document.getElementById("create-column-form");
+  // Campos do form criação
+  const createColTitle = document.getElementById("create-col-title");
+  const createColColor = document.getElementById("create-col-color");
+  const createColPos = document.getElementById("create-col-pos");
+  const createColInitial = document.getElementById("create-col-initial");
+  const createColComplete = document.getElementById("create-col-complete");
+  const createColFinal = document.getElementById("create-col-final");
+
   // --- MODAL DETALHES DA FILA ---
   const colDetailModal = document.getElementById("column-detail-modal");
   const colModalCloseBtn = document.getElementById("col-modal-close-button");
   const colEditForm = document.getElementById("col-edit-form");
   const colDeleteBtn = document.getElementById("col-delete-btn");
   const colPedidosList = document.getElementById("col-pedidos-list");
+  // Campos Edição Fila
   const colEditId = document.getElementById("col-edit-id");
   const colEditTitle = document.getElementById("col-edit-title");
   const colEditColor = document.getElementById("col-edit-color");
   const colEditPosition = document.getElementById("col-edit-position");
   const colEditInitial = document.getElementById("col-edit-initial");
   const colEditComplete = document.getElementById("col-edit-complete");
+  const colEditFinal = document.getElementById("col-edit-final");
 
   // --- MODAL DETALHES PEDIDO ---
   const modal = document.getElementById("pedido-modal");
@@ -59,15 +94,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalDeleteButton = document.getElementById("modal-delete-button");
   const modalSaveChangesBtn = document.getElementById("modal-save-changes-btn");
 
-  // Campos Editáveis
+  // Campos Editáveis do Pedido
   const modalEditTitle = document.getElementById("modal-edit-title");
+  const modalEditDescription = document.getElementById(
+    "modal-edit-description"
+  );
   const modalEditSolicitante = document.getElementById(
     "modal-edit-solicitante"
   );
   const modalEditPriority = document.getElementById("modal-edit-priority");
   const modalEditGroup = document.getElementById("modal-edit-group");
 
-  // Abas
+  // Abas e Conteúdo
   const modalTabs = document.getElementById("modal-tabs");
   const modalTabPanes = document.querySelectorAll(".modal-tab-pane");
   const modalNotesList = document.getElementById("modal-notes-list");
@@ -78,6 +116,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "modal-add-research-form"
   );
   const modalNewResearchInput = document.getElementById("modal-new-research");
+
+  // Finalização
   const modalFinalizeForm = document.getElementById("modal-finalize-form");
   const modalFinalizeSuccess = document.getElementById(
     "modal-finalize-success"
@@ -91,9 +131,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let globalPedidos = [];
   let globalGroups = [];
   let globalSettings = {};
+  let pendingRequests = [];
+  let triageRequests = [];
+  let currentTriageTab = "pending";
   let currentUser = null;
   let currentPedidoId = null;
   let currentPedidoData = null;
+  let isSidebarCollapsed = false;
 
   // =================================================================
   // 1. INICIALIZAÇÃO E AUTENTICAÇÃO
@@ -103,12 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const response = await fetch("/api/auth/check");
 
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401 || response.status === 403)
         throw new Error("AUTH_FAIL");
-      }
-      if (!response.ok) {
-        throw new Error(`Erro no servidor: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Erro no servidor: ${response.status}`);
 
       const data = await response.json();
 
@@ -116,34 +157,37 @@ document.addEventListener("DOMContentLoaded", () => {
         currentUser = data.user;
         initializeUI(currentUser);
         initializeDarkMode();
+        initializeSidebarState();
 
         try {
-          globalSettings = await fetchSettings();
           globalGroups = await fetchGroups();
           await loadBoard();
 
           initializeSidebarCreateButton();
           initializeSidebarNewColumnButton();
 
+          // Inicializa a Triagem
+          if (currentUser.role === "admin" || currentUser.role === "buyer") {
+            await checkInbox();
+            setInterval(checkInbox, 30000);
+            setupTriageListeners();
+          }
+
           setupModalEventListeners();
           setupCreateModalListeners();
+          setupCreateColumnListeners(); // NOVO
           setupColumnDetailListeners();
         } catch (dataError) {
-          console.error("Erro ao carregar dados:", dataError);
-          showCustomAlert(
-            "Erro crítico ao carregar dados: " + dataError.message
-          );
+          console.error("Erro dados:", dataError);
+          showCustomAlert("Erro ao carregar dados: " + dataError.message);
         }
       } else {
         redirectToLogin();
       }
     } catch (error) {
-      console.error("Erro de autenticação:", error);
-      if (error.message === "AUTH_FAIL") {
-        redirectToLogin();
-      } else {
+      if (error.message === "AUTH_FAIL") redirectToLogin();
+      else
         document.body.innerHTML = `<div style="color: white; padding: 20px; text-align: center;"><h1>Erro ao iniciar</h1><p>${error.message}</p></div>`;
-      }
     }
   }
 
@@ -159,42 +203,68 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // --- DARK MODE ---
   function initializeDarkMode() {
-    if (
+    const isDark =
       localStorage.getItem("theme") === "dark" ||
       (!("theme" in localStorage) &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    updateThemeUI(isDark);
+    themeToggleBtn.addEventListener("click", () => {
+      const currentDark = document.documentElement.classList.contains("dark");
+      updateThemeUI(!currentDark);
+    });
+  }
+  function updateThemeUI(isDark) {
+    if (isDark) {
       document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
       themeToggleDarkIcon.classList.add("hidden");
       themeToggleLightIcon.classList.remove("hidden");
     } else {
       document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
       themeToggleDarkIcon.classList.remove("hidden");
       themeToggleLightIcon.classList.add("hidden");
     }
-    themeToggleBtn.addEventListener("click", () => {
-      themeToggleDarkIcon.classList.toggle("hidden");
-      themeToggleLightIcon.classList.toggle("hidden");
-      if (localStorage.getItem("theme") === "dark") {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("theme", "light");
-      } else {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("theme", "dark");
-      }
+  }
+
+  // --- SIDEBAR RETRÁTIL ---
+  function initializeSidebarState() {
+    isSidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+    updateSidebarUI();
+    sidebarToggle.addEventListener("click", () => {
+      isSidebarCollapsed = !isSidebarCollapsed;
+      localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
+      updateSidebarUI();
     });
   }
-
-  // =================================================================
-  // 2. CARREGAMENTO DE DADOS (API)
-  // =================================================================
-
-  async function fetchSettings() {
-    const res = await fetch("/api/settings");
-    if (!res.ok) return {};
-    return await res.json();
+  function updateSidebarUI() {
+    const texts = document.querySelectorAll(".sidebar-text");
+    const icon = sidebarToggle.querySelector("svg");
+    if (isSidebarCollapsed) {
+      sidebar.classList.remove("w-64");
+      sidebar.classList.add("w-20");
+      texts.forEach((el) => el.classList.add("hidden"));
+      icon.innerHTML =
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />';
+      sidebarCreateButton.classList.add("px-0");
+      sidebarCreateButton.classList.remove("px-4");
+    } else {
+      sidebar.classList.remove("w-20");
+      sidebar.classList.add("w-64");
+      texts.forEach((el) => el.classList.remove("hidden"));
+      icon.innerHTML =
+        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />';
+      sidebarCreateButton.classList.remove("px-0");
+      sidebarCreateButton.classList.add("px-4");
+    }
   }
+
+  // =================================================================
+  // 2. CARREGAMENTO DE DADOS
+  // =================================================================
+
   async function fetchGroups() {
     const res = await fetch("/api/groups");
     if (!res.ok) return [];
@@ -217,7 +287,277 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =================================================================
-  // 3. RENDERIZAÇÃO
+  // 3. LÓGICA DE TRIAGEM (INBOX)
+  // =================================================================
+
+  async function checkInbox() {
+    try {
+      const res = await fetch("/api/requests/pending");
+      if (res.ok) {
+        const newRequests = await res.json();
+        const oldCount = parseInt(inboxBadge.textContent) || 0;
+
+        if (newRequests.length > oldCount) {
+          showToastNotification(
+            `Você tem ${newRequests.length} pedidos pendentes.`
+          );
+        }
+
+        pendingRequests = newRequests; // Atualiza lista global de pendentes
+
+        if (newRequests.length > 0) {
+          inboxButton.classList.remove("hidden");
+          inboxBadge.textContent = newRequests.length;
+          inboxBadge.classList.remove("hidden");
+        } else {
+          inboxBadge.classList.add("hidden");
+        }
+
+        if (
+          !triageModal.classList.contains("hidden") &&
+          currentTriageTab === "pending"
+        ) {
+          triageRequests = newRequests;
+          renderTriageList();
+        }
+      }
+    } catch (e) {
+      console.error("Erro inbox", e);
+    }
+  }
+
+  function showToastNotification(message) {
+    if (!toastNotification) return;
+    toastMsg.textContent = message;
+    toastNotification.classList.remove("hidden");
+    setTimeout(() => {
+      toastNotification.classList.add("hidden");
+    }, 5000);
+  }
+
+  function setupTriageListeners() {
+    if (inboxButton) inboxButton.addEventListener("click", openTriageModal);
+    if (triageCloseButton)
+      triageCloseButton.addEventListener("click", () =>
+        triageModal.classList.add("hidden")
+      );
+
+    if (triageTabPending)
+      triageTabPending.addEventListener("click", () =>
+        switchTriageTab("pending")
+      );
+    if (triageTabRejected)
+      triageTabRejected.addEventListener("click", () =>
+        switchTriageTab("rejected")
+      );
+  }
+
+  function openTriageModal() {
+    triageModal.classList.remove("hidden");
+    switchTriageTab("pending");
+  }
+
+  async function switchTriageTab(tab) {
+    currentTriageTab = tab;
+    if (tab === "pending") {
+      triageTabPending.className =
+        "px-3 py-1 text-xs font-bold rounded-md bg-white text-indigo-700 shadow-sm transition-all";
+      triageTabRejected.className =
+        "px-3 py-1 text-xs font-bold rounded-md text-indigo-200 hover:text-white hover:bg-indigo-600 transition-all";
+    } else {
+      triageTabRejected.className =
+        "px-3 py-1 text-xs font-bold rounded-md bg-white text-indigo-700 shadow-sm transition-all";
+      triageTabPending.className =
+        "px-3 py-1 text-xs font-bold rounded-md text-indigo-200 hover:text-white hover:bg-indigo-600 transition-all";
+    }
+
+    triageList.innerHTML =
+      '<p class="p-4 text-sm text-gray-500 text-center">Carregando...</p>';
+    triageDetails.innerHTML = "";
+
+    try {
+      const endpoint =
+        tab === "pending" ? "/api/requests/pending" : "/api/requests/rejected";
+      const res = await fetch(endpoint);
+      if (res.ok) {
+        triageRequests = await res.json();
+        renderTriageList();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function renderTriageList() {
+    if (triageRequests.length === 0) {
+      triageList.innerHTML =
+        '<p class="p-4 text-sm text-gray-500 text-center">Nenhum item encontrado.</p>';
+      return;
+    }
+
+    triageList.innerHTML = triageRequests
+      .map(
+        (req) => `
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors group" onclick="window.selectTriageRequest(${
+              req.id
+            })">
+                <div class="flex justify-between items-start mb-1">
+                    <span class="font-semibold text-gray-900 dark:text-gray-100 text-sm line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">${
+                      req.title
+                    }</span>
+                    <span class="text-xs text-gray-400 whitespace-nowrap ml-2">${new Date(
+                      req.created_at
+                    ).toLocaleDateString("pt-BR")}</span>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">${
+                  req.requester_name
+                } (${req.group_name || "N/A"})</p>
+            </div>
+        `
+      )
+      .join("");
+  }
+
+  window.selectTriageRequest = (id) => {
+    const req = triageRequests.find((r) => r.id === id);
+    if (!req) return;
+
+    const isRejected = currentTriageTab === "rejected";
+
+    triageDetails.innerHTML = `
+            <div class="space-y-6 animate-[fadeIn_0.2s_ease-out]">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white">${
+                      req.title
+                    }</h3>
+                    <div class="flex flex-wrap items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span class="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-xs">ID: ${
+                          req.id
+                        }</span>
+                        <span>Solicitante: <strong>${
+                          req.requester_name
+                        }</strong></span>
+                        <span>&bull;</span>
+                        <span>Grupo: <strong>${
+                          req.group_name || "N/A"
+                        }</strong></span>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Descrição</h4>
+                    <p class="text-gray-800 dark:text-gray-200 text-sm whitespace-pre-wrap leading-relaxed">${
+                      req.description || "Sem descrição."
+                    }</p>
+                </div>
+
+                ${
+                  req.reference_links
+                    ? `<div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-md border border-indigo-100 dark:border-indigo-800"><h4 class="text-xs font-bold text-indigo-500 uppercase mb-1">Link</h4><a href="${req.reference_links}" target="_blank" class="text-indigo-600 dark:text-indigo-400 text-sm hover:underline break-all">${req.reference_links}</a></div>`
+                    : ""
+                }
+                ${
+                  req.justification
+                    ? `<div><h4 class="text-xs font-bold text-gray-500 uppercase mb-1">Justificativa</h4><p class="text-gray-600 dark:text-gray-400 text-sm italic">"${req.justification}"</p></div>`
+                    : ""
+                }
+                
+                ${
+                  isRejected
+                    ? `<div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-md border border-red-200 dark:border-red-800"><h4 class="text-xs font-bold text-red-500 uppercase mb-1">Motivo da Recusa</h4><p class="text-red-800 dark:text-red-200 text-sm">${
+                        req.approval_notes || "Não informado."
+                      }</p></div>`
+                    : ""
+                }
+
+                <hr class="border-gray-200 dark:border-gray-700">
+
+                <div class="flex flex-col gap-4">
+                    ${
+                      !isRejected
+                        ? `
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Definir Prioridade</label>
+                            <select id="triage-priority" class="w-full md:w-1/3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 text-gray-900 dark:text-white">
+                                <option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="handleRejectRequest(${req.id})" class="px-4 py-2 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md text-sm font-semibold">Rejeitar</button>
+                            <button onclick="handleApproveRequest(${req.id})" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-bold shadow-sm flex-1 md:flex-none">Aprovar e Criar Pedido</button>
+                        </div>
+                    `
+                        : `
+                        <div class="flex justify-end">
+                            <button onclick="handleReopenRequest(${req.id})" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-md text-sm font-bold">Reabrir Solicitação</button>
+                        </div>
+                    `
+                    }
+                </div>
+            </div>
+        `;
+  };
+
+  window.handleApproveRequest = async (id) => {
+    const priority = document.getElementById("triage-priority").value;
+    const confirmed = await showCustomConfirm(
+      "Aprovar e enviar para o Kanban?"
+    );
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/requests/${id}/approve`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority }),
+      });
+      if (res.ok) {
+        showCustomAlert("Aprovado com sucesso!");
+        await checkInbox();
+        switchTriageTab("pending");
+        await loadBoard();
+      } else showCustomAlert("Erro ao aprovar.");
+    } catch (e) {
+      showCustomAlert(e.message);
+    }
+  };
+
+  window.handleRejectRequest = async (id) => {
+    const reason = prompt("Motivo da recusa?");
+    if (reason === null) return;
+    try {
+      const res = await fetch(`/api/requests/${id}/reject`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (res.ok) {
+        showCustomAlert("Rejeitado.");
+        await checkInbox();
+        switchTriageTab("pending");
+      } else showCustomAlert("Erro ao rejeitar.");
+    } catch (e) {
+      showCustomAlert(e.message);
+    }
+  };
+
+  window.handleReopenRequest = async (id) => {
+    const confirmed = await showCustomConfirm("Reabrir solicitação?");
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/requests/${id}/reopen`, { method: "PUT" });
+      if (res.ok) {
+        showCustomAlert("Reaberto.");
+        await checkInbox();
+        switchTriageTab("rejected");
+      } else showCustomAlert("Erro ao reabrir.");
+    } catch (e) {
+      showCustomAlert(e.message);
+    }
+  };
+
+  // =================================================================
+  // 4. RENDERIZAÇÃO DO BOARD
   // =================================================================
 
   function renderBoardStructure() {
@@ -225,21 +565,21 @@ document.addEventListener("DOMContentLoaded", () => {
     kanbanContainer.innerHTML = globalColumns
       .map(
         (col) => `
-            <div class="flex w-80 flex-shrink-0 flex-col rounded-lg bg-medium border border-light/50 transition-all duration-300 kanban-column" 
+            <div class="flex w-80 flex-shrink-0 flex-col rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 transition-all duration-300 kanban-column" 
                  id="col-container-${col.id}" 
                  data-col-id="${col.id}" 
-                 data-allows-completion="${col.allows_completion}">
+                 data-allows-completion="${col.allows_completion}"
+                 data-is-final="${col.is_final_destination}">
                 
-                <div class="flex items-center justify-between p-3 border-b border-light">
-                    <h3 class="font-semibold text-text-primary flex items-center gap-2">
+                <div class="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-${col.color}-500"></span>
                         ${col.title}
                     </h3>
-                    <span class="text-xs text-text-secondary count-badge" id="count-${col.id}">0</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-900 px-2 py-0.5 rounded-full" id="count-${col.id}">0</span>
                 </div>
                 
-                <div class="flex-1 overflow-y-auto p-3 min-h-[100px]" id="kanban-col-${col.id}">
-                    </div>
+                <div class="flex-1 overflow-y-auto p-3 min-h-[100px] space-y-3" id="kanban-col-${col.id}"></div>
             </div>
         `
       )
@@ -253,10 +593,10 @@ document.addEventListener("DOMContentLoaded", () => {
         (col) => `
             <li>
                 <div class="flex items-center group">
-                    <button onclick="toggleColumnVisibility(${col.id})" class="p-2 text-text-secondary hover:text-text-primary transition-colors" title="Ocultar/Mostrar">
+                    <button onclick="toggleColumnVisibility(${col.id})" class="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors" title="Ocultar/Mostrar">
                          <svg id="icon-eye-${col.id}" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
                     </button>
-                    <button onclick="openColumnDetail(${col.id})" class="flex-1 text-left p-2 text-sm text-text-secondary hover:text-accent hover:bg-light rounded-r-md transition-colors flex items-center">
+                    <button onclick="openColumnDetail(${col.id})" class="flex-1 text-left p-2 text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-r-md transition-colors flex items-center sidebar-text">
                         <span class="mr-2 h-2 w-2 rounded-full bg-${col.color}-500"></span>
                         ${col.title}
                     </button>
@@ -265,6 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `
       )
       .join("");
+    updateSidebarUI();
   }
 
   window.toggleColumnVisibility = (colId) => {
@@ -304,39 +645,39 @@ document.addEventListener("DOMContentLoaded", () => {
     const card = document.createElement("div");
     card.id = `pedido-${pedido.id}`;
     card.draggable = true;
-    const colColor = pedido.column_color || "gray";
-    const priorityIndicator =
-      pedido.priority === "alta"
-        ? "🔴"
-        : pedido.priority === "media"
-        ? "🟡"
-        : "🔵";
 
-    card.className = `kanban-card bg-light p-3 rounded-lg shadow mb-3 border-l-4 border-${colColor}-500 cursor-pointer hover:bg-gray-600 transition-colors`;
+    const priorityMap = {
+      alta: { color: "border-red-500", label: "🔴 Alta" },
+      media: { color: "border-yellow-500", label: "🟡 Média" },
+      baixa: { color: "border-blue-500", label: "🔵 Baixa" },
+    };
+    const priorityInfo = priorityMap[pedido.priority] || priorityMap["baixa"];
+    const colColor = pedido.column_color || "gray";
+
+    card.className = `kanban-card bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm border-l-4 border-${colColor}-500 hover:shadow-md cursor-pointer transition-all group`;
 
     card.innerHTML = `
-            <div class="flex justify-between items-start">
-                <p class="font-semibold text-text-primary mb-1 text-sm">${
+            <div class="flex justify-between items-start mb-1">
+                <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm line-clamp-2">${
                   pedido.title
                 }</p>
-                <span class="text-xs" title="Prioridade ${
-                  pedido.priority
-                }">${priorityIndicator}</span>
+                <span class="text-[10px] whitespace-nowrap ml-1 opacity-75">${
+                  priorityInfo.label
+                }</span>
             </div>
-            <div class="flex justify-between items-center mt-1">
-                 <p class="text-xs text-text-secondary">Solicitante: ${
-                   pedido.solicitante_display || "N/A"
-                 }</p>
+            <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
+                 <span>${pedido.solicitante_display || "N/A"}</span>
                  ${
                    pedido.purchase_link
-                     ? '<span class="text-[10px] bg-green-900 text-green-300 px-1 rounded">Pago</span>'
+                     ? '<span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 px-1.5 rounded text-[10px]">Pago</span>'
                      : ""
                  }
             </div>
-            <p class="text-[10px] text-text-secondary mt-1 text-right">${formatTimestamp(
-              pedido.task_created_at
-            )}</p>
+            <p class="text-[10px] text-gray-400 dark:text-gray-500 text-right border-t border-gray-100 dark:border-gray-600 pt-1 mt-1">
+                ${formatTimestamp(pedido.task_created_at)}
+            </p>
         `;
+
     card.addEventListener("dragstart", (e) => {
       e.dataTransfer.setData("text/plain", card.id);
       card.classList.add("opacity-50");
@@ -345,6 +686,7 @@ document.addEventListener("DOMContentLoaded", () => {
     card.addEventListener("click", (e) => {
       if (!e.target.closest(".dragging")) openPedidoModal(pedido.id);
     });
+
     return card;
   }
 
@@ -359,15 +701,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = cardId.split("-")[1];
         const card = document.getElementById(cardId);
         const targetBody = col.querySelector('[id^="kanban-col-"]');
+
         if (card && targetBody && !targetBody.contains(card)) {
           targetBody.appendChild(card);
           const targetColId = col.dataset.colId;
           const allowsCompletion = col.dataset.allowsCompletion === "1";
+
           await fetch(`/api/pedidos/${id}/move`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ newColumnId: targetColId }),
           });
+
           if (allowsCompletion) openPedidoModal(id, "tab-finalize");
         }
       };
@@ -375,34 +720,68 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =================================================================
-  // 4. MODAL DETALHES DA FILA (NOVO)
+  // 5. MODAL NOVA FILA
   // =================================================================
 
   function initializeSidebarNewColumnButton() {
     if (sidebarNewColumnButton) {
-      sidebarNewColumnButton.onclick = async () => {
-        // Simplificação: Cria via prompt, idealmente seria um modal
-        // Mas como o modal do admin é complexo, mantemos simples para o MVP
-        // OU podemos reusar o modal de criação se ele estivesse no HTML.
-        // Para consistência com a "UI Modais", vamos fazer um prompt estilizado "fake" ou direto API.
-        // Vou usar um prompt nativo por brevidade, mas em produção usaríamos um modal.
-        const name = prompt("Nome da Nova Fila:");
-        if (name) {
+      sidebarNewColumnButton.onclick = openCreateColumnModal;
+    }
+  }
+
+  function setupCreateColumnListeners() {
+    if (!createColModal) return;
+    const close = () => createColModal.classList.add("hidden");
+    createColCloseBtn.onclick = close;
+    createColCancelBtn.onclick = close;
+
+    if (createColForm) {
+      createColForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const data = {
+          title: document.getElementById("create-col-title").value,
+          color: document.getElementById("create-col-color").value,
+          position: document.getElementById("create-col-pos").value,
+          is_initial: document.getElementById("create-col-initial").checked,
+          allows_completion: document.getElementById("create-col-complete")
+            .checked,
+          is_final_destination:
+            document.getElementById("create-col-final").checked,
+        };
+
+        try {
           const res = await fetch("/api/columns", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: name, color: "gray", position: 99 }),
+            body: JSON.stringify(data),
           });
-          if (res.ok) await loadBoard();
-          else showCustomAlert("Erro ao criar fila.");
+          if (res.ok) {
+            close();
+            await loadBoard();
+            showCustomAlert("Fila criada!");
+          } else {
+            showCustomAlert("Erro ao criar fila.");
+          }
+        } catch (err) {
+          showCustomAlert(err.message);
         }
       };
     }
   }
 
+  function openCreateColumnModal() {
+    if (createColForm) createColForm.reset();
+    createColModal.classList.remove("hidden");
+  }
+
+  // =================================================================
+  // 6. MODAL DETALHES DA FILA
+  // =================================================================
+
   function setupColumnDetailListeners() {
     if (!colDetailModal) return;
     colModalCloseBtn.onclick = () => colDetailModal.classList.add("hidden");
+
     colEditForm.onsubmit = async (e) => {
       e.preventDefault();
       const id = colEditId.value;
@@ -412,6 +791,7 @@ document.addEventListener("DOMContentLoaded", () => {
         position: colEditPosition.value,
         is_initial: colEditInitial.checked,
         allows_completion: colEditComplete.checked,
+        is_final_destination: colEditFinal ? colEditFinal.checked : false,
       };
       const res = await fetch(`/api/columns/${id}`, {
         method: "PUT",
@@ -450,33 +830,34 @@ document.addEventListener("DOMContentLoaded", () => {
       colEditPosition.value = col.position;
       colEditInitial.checked = col.is_initial === 1;
       colEditComplete.checked = col.allows_completion === 1;
+      if (colEditFinal) colEditFinal.checked = col.is_final_destination === 1;
     }
     colPedidosList.innerHTML = "Carregando...";
     const pedidosDaFila = globalPedidos.filter((p) => p.column_id === colId);
 
     if (pedidosDaFila.length === 0) {
       colPedidosList.innerHTML =
-        '<p class="text-sm text-text-secondary">Nenhum pedido nesta fila.</p>';
+        '<p class="text-sm text-gray-500 dark:text-gray-400">Nenhum pedido nesta fila.</p>';
     } else {
       colPedidosList.innerHTML = pedidosDaFila
         .map(
           (p) => `
-                <div class="bg-light p-3 rounded border-l-4 border-${
+                <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded border-l-4 border-${
                   col.color
-                }-500 cursor-pointer hover:bg-dark mb-2" onclick="openPedidoModal(${
+                }-500 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 mb-2" onclick="openPedidoModal(${
             p.id
           })">
                     <div class="flex justify-between">
-                        <span class="font-semibold text-text-primary">${
+                        <span class="font-semibold text-gray-900 dark:text-gray-100">${
                           p.title
                         }</span>
-                        <span class="text-xs text-text-secondary">${formatTimestamp(
+                        <span class="text-xs text-gray-500 dark:text-gray-400">${formatTimestamp(
                           p.task_created_at
                         )}</span>
                     </div>
                     ${
                       p.last_note
-                        ? `<p class="text-xs text-text-secondary mt-1 italic">" ${p.last_note} "</p>`
+                        ? `<p class="text-xs text-gray-600 dark:text-gray-300 mt-1 italic">" ${p.last_note} "</p>`
                         : ""
                     }
                 </div>
@@ -487,7 +868,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // =================================================================
-  // 5. MODAL CRIAÇÃO PEDIDO
+  // 7. MODAL CRIAÇÃO PEDIDO
   // =================================================================
   function initializeSidebarCreateButton() {
     if (sidebarCreateButton) {
@@ -518,10 +899,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function closeCreateModal() {
     createModal.classList.add("hidden");
   }
+
   async function handleCreatePedidoSubmit(e) {
     e.preventDefault();
     const data = {
       title: createPedidoTitle.value,
+      description: createPedidoDescription.value,
       group_id: createPedidoGroup.value,
       priority: createPedidoPriority.value,
       solicitante_name: createPedidoSolicitante.value,
@@ -543,7 +926,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =================================================================
-  // 6. MODAL DETALHES PEDIDO (COM EDIÇÃO)
+  // 8. MODAL DETALHES PEDIDO (COM EDIÇÃO E DESCRIÇÃO)
   // =================================================================
   function setupModalEventListeners() {
     modalCloseButton.onclick = closePedidoModal;
@@ -554,12 +937,20 @@ document.addEventListener("DOMContentLoaded", () => {
     modalTabs.onclick = (e) => {
       if (e.target.tagName !== "BUTTON") return;
       document.querySelectorAll(".modal-tab-button").forEach((btn) => {
-        btn.classList.remove("border-accent", "text-accent");
-        btn.classList.add("border-transparent", "text-text-secondary");
+        btn.classList.remove(
+          "border-indigo-600",
+          "text-indigo-600",
+          "dark:text-indigo-400"
+        );
+        btn.classList.add("border-transparent", "text-gray-500");
       });
       modalTabPanes.forEach((p) => p.classList.add("hidden"));
-      e.target.classList.add("border-accent", "text-accent");
-      e.target.classList.remove("border-transparent", "text-text-secondary");
+      e.target.classList.add(
+        "border-indigo-600",
+        "text-indigo-600",
+        "dark:text-indigo-400"
+      );
+      e.target.classList.remove("border-transparent", "text-gray-500");
       document
         .getElementById(e.target.getAttribute("data-tab"))
         .classList.remove("hidden");
@@ -599,10 +990,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderModalDetails(pedido) {
-    // Campos editáveis
+    const isFinal =
+      globalColumns.find((c) => c.id === pedido.column_id)
+        ?.is_final_destination === 1;
+    const disabled = isFinal;
+
     modalEditTitle.value = pedido.title;
+    modalEditDescription.value = pedido.description || "";
     modalEditSolicitante.value = pedido.solicitante_display || "";
     modalEditPriority.value = pedido.priority || "baixa";
+
+    modalEditTitle.disabled = disabled;
+    modalEditDescription.disabled = disabled;
+    modalEditSolicitante.disabled = disabled;
+    modalEditPriority.disabled = disabled;
+    modalEditGroup.disabled = disabled;
+
+    modalSaveChangesBtn.style.display = disabled ? "none" : "block";
 
     modalEditGroup.innerHTML = "";
     globalGroups.forEach((g) => {
@@ -617,6 +1021,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function handleSavePedidoChanges() {
     const data = {
       title: modalEditTitle.value,
+      description: modalEditDescription.value,
       solicitante_name: modalEditSolicitante.value,
       priority: modalEditPriority.value,
       group_id: modalEditGroup.value,
@@ -646,13 +1051,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderModalNotes(notes) {
     modalNotesList.innerHTML = notes.length
       ? ""
-      : '<li class="text-center text-text-secondary">Sem notas.</li>';
+      : '<li class="text-center text-gray-500">Sem notas.</li>';
     notes.forEach((n) => {
       const li = document.createElement("li");
-      li.className = "p-3 bg-light rounded-md mb-2";
-      li.innerHTML = `<p class="text-text-primary">${
+      li.className = "p-3 bg-gray-50 dark:bg-gray-700 rounded-md mb-2";
+      li.innerHTML = `<p class="text-gray-900 dark:text-gray-100">${
         n.content
-      }</p><p class="text-xs text-text-secondary mt-1">${
+      }</p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${
         n.username
       } - ${formatTimestamp(n.created_at)}</p>`;
       modalNotesList.appendChild(li);
@@ -674,15 +1079,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderModalResearch(items) {
     modalResearchList.innerHTML = items.length
       ? ""
-      : '<li class="text-center text-text-secondary">Sem links.</li>';
+      : '<li class="text-center text-gray-500">Sem links.</li>';
     items.forEach((i) => {
       const li = document.createElement("li");
-      li.className = "p-3 bg-light rounded-md mb-2";
-      li.innerHTML = `<p class="text-text-primary break-all"><a href="${
+      li.className = "p-3 bg-gray-50 dark:bg-gray-700 rounded-md mb-2";
+      li.innerHTML = `<p class="text-gray-900 dark:text-gray-100 break-all"><a href="${
         i.content
-      }" target="_blank" class="text-blue-400 underline">${
+      }" target="_blank" class="text-indigo-500 hover:underline">${
         i.content
-      }</a></p><p class="text-xs text-text-secondary mt-1">${
+      }</a></p><p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${
         i.username
       } - ${formatTimestamp(i.created_at)}</p>`;
       modalResearchList.appendChild(li);
@@ -722,6 +1127,7 @@ document.addEventListener("DOMContentLoaded", () => {
       showCustomAlert(e.message);
     }
   }
+
   async function handleDeliver() {
     const confirmed = await showCustomConfirm(
       "Tem certeza? O pedido será arquivado."
@@ -766,12 +1172,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function handleDeletePedido() {
+    const isFinal =
+      globalColumns.find((c) => c.id === currentPedidoData.column_id)
+        ?.is_final_destination === 1;
+    if (isFinal) {
+      showCustomAlert("Não é possível excluir pedidos na fila final.");
+      return;
+    }
     const confirmed = await showCustomConfirm("Excluir pedido?");
     if (!confirmed) return;
     await fetch(`/api/pedidos/${currentPedidoId}`, { method: "DELETE" });
     closePedidoModal();
     await loadBoard();
   }
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     redirectToLogin();

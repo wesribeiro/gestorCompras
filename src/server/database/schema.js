@@ -22,14 +22,14 @@ const createTablesQueries = `
         FOREIGN KEY (group_id) REFERENCES Groups (id)
     );
 
-    -- NOVA TABELA: Colunas do Kanban (Filas Dinâmicas)
     CREATE TABLE IF NOT EXISTS KanbanColumns (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
-        color TEXT NOT NULL, -- Ex: 'blue', 'yellow', 'red', 'green'
+        color TEXT NOT NULL,
         position INTEGER NOT NULL,
-        is_initial BOOLEAN DEFAULT 0, -- Se é a fila onde novos pedidos caem
-        allows_completion BOOLEAN DEFAULT 0, -- Se permite preencher dados de compra
+        is_initial BOOLEAN DEFAULT 0,
+        allows_completion BOOLEAN DEFAULT 0,
+        is_final_destination BOOLEAN DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -53,20 +53,22 @@ const createTablesQueries = `
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         request_id INTEGER, 
         title TEXT NOT NULL,
+        description TEXT,
         
-        -- MUDANÇA: Referência à tabela de colunas em vez de texto fixo
         column_id INTEGER NOT NULL, 
-        
         priority TEXT NOT NULL DEFAULT 'baixa',
         solicitante_name TEXT,
         
-        -- Status do ciclo de vida ('active' = na fila, 'completed' = entregue/arquivado)
         lifecycle_status TEXT NOT NULL DEFAULT 'active', 
 
         task_created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         purchase_link TEXT,
         purchased_price REAL,
         purchased_quantity INTEGER,
+        
+        rating INTEGER, 
+        rating_comment TEXT,
+
         report_generated_at DATETIME,
         
         created_by_user_id INTEGER, 
@@ -98,6 +100,30 @@ const createTablesQueries = `
         FOREIGN KEY (user_id) REFERENCES Users (id)
     );
 
+    -- NOVA TABELA: Comentários (Chat)
+    CREATE TABLE IF NOT EXISTS PedidoComments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pedido_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (pedido_id) REFERENCES KanbanPedidos (id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES Users (id)
+    );
+
+    -- NOVA TABELA: Anexos (Arquivos)
+    CREATE TABLE IF NOT EXISTS PedidoAttachments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pedido_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        file_path TEXT NOT NULL, -- Caminho do arquivo no servidor
+        file_name TEXT NOT NULL, -- Nome original do arquivo
+        file_type TEXT,          -- Tipo (pdf, jpg, etc)
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (pedido_id) REFERENCES KanbanPedidos (id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES Users (id)
+    );
+
     CREATE TABLE IF NOT EXISTS AuditLog (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -118,7 +144,7 @@ const createTablesQueries = `
 
 function initializeDatabase() {
   db.serialize(async () => {
-    console.log("Executando script de schema v3.0 (Dinâmico)...");
+    console.log("Executando script de schema v4.5 (Chat e Anexos)...");
     db.exec(createTablesQueries, (err) => {
       if (err) console.error("Erro tabelas:", err.message);
       else insertInitialData();
@@ -128,7 +154,6 @@ function initializeDatabase() {
 
 async function insertInitialData() {
   try {
-    // 1. Criar Grupo Admin
     const groupName = "Administração";
     await new Promise((resolve) => {
       db.run(
@@ -143,7 +168,6 @@ async function insertInitialData() {
       )
     );
 
-    // 2. Criar Usuário Admin
     const user = await new Promise((resolve) =>
       db.get(
         `SELECT id FROM Users WHERE username = ?`,
@@ -160,45 +184,23 @@ async function insertInitialData() {
       console.log("Usuário Admin criado.");
     }
 
-    // 3. INSERIR COLUNAS PADRÃO (Se não existirem)
-    // Cores disponíveis no Tailwind: blue, yellow, red, green, purple, pink, gray
-    const defaultColumns = [
-      {
-        title: "Pedido de compra",
-        color: "blue",
-        pos: 1,
-        initial: 1,
-        complete: 0,
-      },
-      { title: "Em cotação", color: "yellow", pos: 2, initial: 0, complete: 0 },
-      { title: "Estagnado", color: "red", pos: 3, initial: 0, complete: 0 },
-      {
-        title: "Compra efetuada",
-        color: "green",
-        pos: 4,
-        initial: 0,
-        complete: 1,
-      }, // allows_completion = 1
-    ];
-
     const colsExist = await new Promise((resolve) =>
       db.get("SELECT count(*) as count FROM KanbanColumns", (err, row) =>
         resolve(row.count)
       )
     );
-
     if (colsExist === 0) {
       console.log("Inserindo colunas padrão...");
       const stmt = db.prepare(
-        `INSERT INTO KanbanColumns (title, color, position, is_initial, allows_completion) VALUES (?, ?, ?, ?, ?)`
+        `INSERT INTO KanbanColumns (title, color, position, is_initial, allows_completion, is_final_destination) VALUES (?, ?, ?, ?, ?, ?)`
       );
-      defaultColumns.forEach((c) =>
-        stmt.run(c.title, c.color, c.pos, c.initial, c.complete)
-      );
+      stmt.run("Pedido de compra", "blue", 1, 1, 0, 0);
+      stmt.run("Em cotação", "yellow", 2, 0, 0, 0);
+      stmt.run("Estagnado", "red", 3, 0, 0, 0);
+      stmt.run("Compra efetuada", "green", 4, 0, 1, 1);
       stmt.finalize();
     }
 
-    // 4. Configurações
     const defaultSettings = [
       { key: "module_kanban_enabled", value: "true" },
       { key: "module_solicitacao_enabled", value: "false" },
