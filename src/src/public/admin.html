@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Gestor de Compras</title>
+    <link href="/css/style.css" rel="stylesheet" />
+    <script>
+      if (
+        localStorage.theme === "dark" ||
+        (!("theme" in localStorage) &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    </script>
+  </head>
+  <body
+    class="h-full bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col transition-colors duration-200"
+  >
+    <header
+      class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center"
+    >
+      <div class="flex items-center">
+        <a
+          href="index.html"
+          class="mr-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+        >
+          &larr; Voltar
+        </a>
+        <h1 class="text-xl font-bold">Painel Administrativo</h1>
+      </div>
+    </header>
+
+    <main class="flex-1 container mx-auto p-6 max-w-5xl">
+      <div
+        class="flex space-x-4 border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto"
+      >
+        <button
+          id="tab-users-btn"
+          class="py-2 px-4 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-medium focus:outline-none transition-colors whitespace-nowrap"
+        >
+          Gerenciar Usuários
+        </button>
+        <button
+          id="tab-groups-btn"
+          class="py-2 px-4 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none transition-colors whitespace-nowrap"
+        >
+          Gerenciar Grupos
+        </button>
+        <button
+          id="tab-columns-btn"
+          class="py-2 px-4 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none transition-colors whitespace-nowrap"
+        >
+          Gerenciar Filas (Kanban)
+        </button>
+        <button
+          id="tab-archived-btn"
+          class="py-2 px-4 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none transition-colors whitespace-nowrap"
+        >
+          Pedidos Finalizados
+        </button>
+        <button
+          id="tab-audit-btn"
+          class="py-2 px-4 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none transition-colors whitespace-nowrap"
+        >
+          Logs de Auditoria
+        </button>
+      </div>
+
+      <div id="tab-users-content">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Lista de Usuários</h2>
+          <button
+            onclick="document.getElementById('new-user-modal').classList.remove('hidden')"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+          >
+            Novo Usuário
+          </button>
+        </div>
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700"
+        >
+          <table class="w-full text-left text-sm">
+            <thead
+              class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            >
+              <tr>
+                <th class="p-3">Nome de Exibição</th>
+                <th class="p-3">Usuário (Login)</th>
+                <th class="p-3">Email</th>
+                <th class="p-3">Papel (Role)</th>
+                <th class="p-3">Grupo</th>
+                <th class="p-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody
+              id="users-list-body"
+              class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-400"
+            ></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-groups-content" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Lista de Grupos</h2>
+          <button
+            onclick="document.getElementById('new-group-modal').classList.remove('hidden')"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+          >
+            Novo Grupo
+          </button>
+        </div>
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700"
+        >
+          <table class="w-full text-left text-sm">
+            <thead
+              class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            >
+              <tr>
+                <th class="p-3">Nome do Grupo</th>
+                <th class="p-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody
+              id="groups-list-body"
+              class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-400"
+            ></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-columns-content" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Filas do Kanban</h2>
+          <button
+            onclick="document.getElementById('new-column-modal').classList.remove('hidden')"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+          >
+            Nova Fila
+          </button>
+        </div>
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700"
+        >
+          <table class="w-full text-left text-sm">
+            <thead
+              class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            >
+              <tr>
+                <th class="p-3 w-10">#</th>
+                <th class="p-3">Nome da Fila</th>
+                <th class="p-3">Cor</th>
+                <th class="p-3 text-center">Inicial?</th>
+                <th class="p-3 text-center">Fecha Pedido?</th>
+                <th class="p-3 text-center">Destino Final?</th>
+                <th class="p-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody
+              id="columns-list-body"
+              class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-400"
+            ></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-archived-content" class="hidden">
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold mb-4">Buscar Pedidos Finalizados</h2>
+
+          <div
+            class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
+          >
+            <div class="md:col-span-2">
+              <label
+                class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                >Termo (Nome, Descrição, Solicitante)</label
+              >
+              <input
+                type="text"
+                id="search-term"
+                placeholder="Digite para buscar..."
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                >De</label
+              >
+              <input
+                type="date"
+                id="search-date-start"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1"
+                >Até</label
+              >
+              <input
+                type="date"
+                id="search-date-end"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div class="md:col-span-4 flex justify-end">
+              <button
+                id="btn-search-archived"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md text-sm font-semibold transition-colors"
+              >
+                Pesquisar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700"
+        >
+          <table class="w-full text-left text-sm">
+            <thead
+              class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            >
+              <tr>
+                <th class="p-3">Título</th>
+                <th class="p-3">Grupo</th>
+                <th class="p-3">Solicitante</th>
+                <th class="p-3">Finalizado Em</th>
+                <th class="p-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody
+              id="archived-list-body"
+              class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-400"
+            ></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-audit-content" class="hidden">
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold mb-4">
+            Registros de Auditoria (Logs)
+          </h2>
+
+          <div
+            class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700 grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
+          >
+            <div class="md:col-span-4 flex justify-end">
+              <button
+                id="btn-refresh-audit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-md text-sm font-semibold transition-colors flex items-center gap-2"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Atualizar Logs
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow border border-gray-200 dark:border-gray-700"
+        >
+          <table class="w-full text-left text-sm">
+            <thead
+              class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+            >
+              <tr>
+                <th class="p-3 w-20">ID</th>
+                <th class="p-3 w-40">Data/Hora</th>
+                <th class="p-3 w-40">Usuário</th>
+                <th class="p-3">Ação</th>
+                <th class="p-3 w-32">Tipo Alvo</th>
+                <th class="p-3 w-20">ID Alvo</th>
+              </tr>
+            </thead>
+            <tbody
+              id="audit-list-body"
+              class="divide-y divide-gray-200 dark:divide-gray-700 text-gray-600 dark:text-gray-400"
+            >
+              <tr>
+                <td colspan="6" class="p-4 text-center italic">
+                  Carregando logs...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <div
+      id="new-user-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg w-[32rem] border border-gray-200 dark:border-gray-700 shadow-xl max-h-[90vh] overflow-y-auto"
+      >
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+          Novo Usuário
+        </h3>
+        <form id="new-user-form" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Login (Sistema)</label
+              >
+              <input
+                type="text"
+                name="username"
+                placeholder="ex: joao.silva"
+                required
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Senha</label
+              >
+              <input
+                type="password"
+                name="password"
+                placeholder="******"
+                required
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400"
+              >Nome de Exibição</label
+            >
+            <input
+              type="text"
+              name="display_name"
+              placeholder="Ex: João Silva"
+              class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >E-mail</label
+              >
+              <input
+                type="email"
+                name="email"
+                placeholder="joao@empresa.com"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Telefone</label
+              >
+              <input
+                type="text"
+                name="phone"
+                placeholder="(00) 00000-0000"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Gênero</label
+              >
+              <select
+                name="gender"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Selecione...</option>
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+                <option value="O">Outro</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Papel (Role)</label
+              >
+              <select
+                name="role"
+                required
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="requester">Solicitante</option>
+                <option value="buyer">Comprador</option>
+                <option value="director">Diretor</option>
+                <option value="assistant">Assistente</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400"
+              >Grupo (Setor)</label
+            >
+            <select
+              name="group_id"
+              id="user-group-select"
+              required
+              class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Carregando grupos...</option>
+            </select>
+          </div>
+
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('new-user-modal').classList.add('hidden')"
+              class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="edit-user-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg w-[32rem] border border-gray-200 dark:border-gray-700 shadow-xl max-h-[90vh] overflow-y-auto"
+      >
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+          Editar Usuário
+        </h3>
+        <form id="edit-user-form" class="space-y-4">
+          <input type="hidden" name="id" id="edit-user-id" />
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Login (Sistema)</label
+              >
+              <input
+                type="text"
+                name="username"
+                id="edit-user-username"
+                required
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Nova Senha (Opcional)</label
+              >
+              <input
+                type="password"
+                name="password"
+                placeholder="Deixe em branco p/ manter"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400"
+              >Nome de Exibição</label
+            >
+            <input
+              type="text"
+              name="display_name"
+              id="edit-user-displayname"
+              class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >E-mail</label
+              >
+              <input
+                type="email"
+                name="email"
+                id="edit-user-email"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Telefone</label
+              >
+              <input
+                type="text"
+                name="phone"
+                id="edit-user-phone"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Gênero</label
+              >
+              <select
+                name="gender"
+                id="edit-user-gender"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              >
+                <option value="">Selecione...</option>
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+                <option value="O">Outro</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Papel</label
+              >
+              <select
+                name="role"
+                id="edit-user-role"
+                required
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              >
+                <option value="requester">Solicitante</option>
+                <option value="buyer">Comprador</option>
+                <option value="director">Diretor</option>
+                <option value="assistant">Assistente</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400"
+              >Grupo</label
+            >
+            <select
+              name="group_id"
+              id="edit-user-group-select"
+              required
+              class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+            ></select>
+          </div>
+
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('edit-user-modal').classList.add('hidden')"
+              class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700"
+            >
+              Atualizar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="new-group-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg w-96 border border-gray-200 dark:border-gray-700 shadow-xl"
+      >
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+          Novo Grupo
+        </h3>
+        <form id="new-group-form" class="space-y-4">
+          <input
+            type="text"
+            name="name"
+            placeholder="Nome do Grupo"
+            required
+            class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+          />
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('new-group-modal').classList.add('hidden')"
+              class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="edit-group-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg w-96 border border-gray-200 dark:border-gray-700 shadow-xl"
+      >
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+          Editar Grupo
+        </h3>
+        <form id="edit-group-form" class="space-y-4">
+          <input type="hidden" name="id" id="edit-group-id" />
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400"
+              >Nome do Grupo</label
+            >
+            <input
+              type="text"
+              name="name"
+              id="edit-group-name"
+              required
+              class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('edit-group-modal').classList.add('hidden')"
+              class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700"
+            >
+              Atualizar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="new-column-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg w-96 border border-gray-200 dark:border-gray-700 shadow-xl"
+      >
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+          Nova Fila Kanban
+        </h3>
+        <form id="new-column-form" class="space-y-4">
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400"
+              >Nome da Fila</label
+            >
+            <input
+              type="text"
+              name="title"
+              placeholder="Ex: Em Aprovação"
+              required
+              class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Cor</label
+              >
+              <select
+                name="color"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              >
+                <option value="gray">Cinza</option>
+                <option value="blue">Azul</option>
+                <option value="yellow">Amarelo</option>
+                <option value="red">Vermelho</option>
+                <option value="green">Verde</option>
+                <option value="purple">Roxo</option>
+                <option value="pink">Rosa</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Ordem</label
+              >
+              <input
+                type="number"
+                name="position"
+                value="99"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="is_initial"
+              id="new-col-initial"
+              class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label
+              for="new-col-initial"
+              class="text-sm text-gray-900 dark:text-gray-100"
+              >Fila Inicial (Novos Pedidos)</label
+            >
+          </div>
+          <div class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="allows_completion"
+              id="new-col-complete"
+              class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label
+              for="new-col-complete"
+              class="text-sm text-gray-900 dark:text-gray-100"
+              >Permite Coletar Dados de Compra</label
+            >
+          </div>
+          <div class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="is_final_destination"
+              id="new-col-final"
+              class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label
+              for="new-col-final"
+              class="text-sm text-gray-900 dark:text-gray-100"
+              >Destino Final (Bloqueia Edição)</label
+            >
+          </div>
+
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('new-column-modal').classList.add('hidden')"
+              class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700"
+            >
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div
+      id="edit-column-modal"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
+    >
+      <div
+        class="bg-white dark:bg-gray-800 p-6 rounded-lg w-96 border border-gray-200 dark:border-gray-700 shadow-xl"
+      >
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
+          Editar Fila
+        </h3>
+        <form id="edit-column-form" class="space-y-4">
+          <input type="hidden" name="id" id="edit-column-id" />
+
+          <div>
+            <label class="text-xs text-gray-500 dark:text-gray-400"
+              >Nome da Fila</label
+            >
+            <input
+              type="text"
+              name="title"
+              id="edit-column-title"
+              required
+              class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Cor</label
+              >
+              <select
+                name="color"
+                id="edit-column-color"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              >
+                <option value="gray">Cinza</option>
+                <option value="blue">Azul</option>
+                <option value="yellow">Amarelo</option>
+                <option value="red">Vermelho</option>
+                <option value="green">Verde</option>
+                <option value="purple">Roxo</option>
+                <option value="pink">Rosa</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 dark:text-gray-400"
+                >Posição</label
+              >
+              <input
+                type="number"
+                name="position"
+                id="edit-column-position"
+                class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded p-2 text-gray-900 dark:text-white"
+              />
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="is_initial"
+              id="edit-column-initial"
+              class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label
+              for="edit-column-initial"
+              class="text-sm text-gray-900 dark:text-gray-100"
+              >Fila Inicial</label
+            >
+          </div>
+          <div class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="allows_completion"
+              id="edit-column-complete"
+              class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label
+              for="edit-column-complete"
+              class="text-sm text-gray-900 dark:text-gray-100"
+              >Permite Dados de Compra</label
+            >
+          </div>
+          <div class="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              name="is_final_destination"
+              id="edit-column-final"
+              class="rounded border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label
+              for="edit-column-final"
+              class="text-sm text-gray-900 dark:text-gray-100"
+              >Destino Final (Bloqueia Edição)</label
+            >
+          </div>
+
+          <div class="flex justify-end space-x-2 mt-4">
+            <button
+              type="button"
+              onclick="document.getElementById('edit-column-modal').classList.add('hidden')"
+              class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 px-3 py-2"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700"
+            >
+              Atualizar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="/js/admin.js"></script>
+  </body>
+</html>

@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* * NOVO (ETAPA 18): Estilos Globais e Scrollbar Customizada
+ */
+@layer base {
+  body {
+    /* Define o fundo e a cor do texto padrão usando nossos novos tokens do Tailwind */
+    background-color: theme("colors.dark");
+    color: theme("colors.text-primary");
+  }
+
+  /* Scrollbar customizada para Webkit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: theme("colors.dark");
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: theme("colors.light");
+    border-radius: 20px;
+    border: 3px solid theme("colors.dark");
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: theme("colors.text-secondary");
+  }
+
+  /* Scrollbar customizada para Firefox */
+  /* (O Firefox moderno suporta esta sintaxe) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.light") theme("colors.dark");
+  }
+}
